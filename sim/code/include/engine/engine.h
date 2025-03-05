@@ -22,6 +22,9 @@ public:
   };
 
   int genCycle();
+  void Init();
+
+  std::unique_ptr<AROctree> tree;
 
 private:
   Cfx &cfx;
@@ -29,8 +32,9 @@ private:
   int physicsTick();
 
   std::vector<std::thread> threads;
-  std::unique_ptr<AROctree> tree;
 
   CloseInteractionElement closeInteraction;
   MultipoleInteractionElement multipoleInteraction;
+
+  void InitThreads();
 };

@@ -21,3 +21,4 @@ add_executable(simulation_bin ${gravwll_source_code_dir}/main.cpp)
 
 target_include_directories(simulation_bin PRIVATE ${gravwll_source_code_dir}/include)
 target_link_libraries(simulation_bin PRIVATE gravwll::simulation)
+target_link_libraries(simulation_bin PRIVATE gravwll::simulation raylib)

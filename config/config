@@ -1,0 +1,4 @@
+HEADLESS=false
+DATAMODE=GEN
+TreeMaxDepth=10
+N=20

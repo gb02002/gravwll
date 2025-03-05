@@ -1,5 +1,6 @@
 #pragma once
 #include "engine/engine.h"
+#include "gfx/gfx.h"
 
 class Simulation {
 public:
@@ -11,5 +12,5 @@ public:
 private:
   Cfx cfx;
   PhysicsEngine PE;
-  // Gfx& gfx;
+  GfxEngine gfx;
 };

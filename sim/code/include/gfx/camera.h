@@ -1,6 +1,6 @@
 #pragma once
-#include "core/bodies/particles.h"
 #include "raylib.h"
+#include "utils/namespaces/MyMath.h"
 
 struct MyCamera3D {
   Camera3D camera;

@@ -1,4 +1,5 @@
 #include "cfx/cfx.h"
+#include "cfx/dataSets.h"
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -22,7 +23,9 @@ void Cfx::AdoptInitialValues() {
                "prepare them for cfx\n";
 }
 
+// Plammer to be implemented later
 std::vector<Particle> Cfx::CreateDataSet() {
-  auto dataSet = std::vector<Particle>();
+  auto dataSet = GenerateRandomParticle(this->settings->N);
+
   return dataSet;
 }

@@ -17,7 +17,10 @@ AROctreeNode::AROctreeNode(MyMath::BoundingBox bounds, Multipole multipole,
 
 AROctreeNode::AROctreeNode(const Cfx &cfx, Storage &storage)
     : bounds(cfx.InitialBB), multipole(Multipole{cfx.TotalMass}), depth(0),
-      maxDepth(cfx.TreeMaxDepth), storage(storage) {};
+      maxDepth(cfx.TreeMaxDepth), storage(storage) {
+  setCalculatedCenter(); // Вызываем метод уже после инициализации всех полей
+  localBlock = storage.createMemBlock({});
+};
 
 AROctreeNode::~AROctreeNode() {
   for (auto &child : children) {
@@ -25,7 +28,7 @@ AROctreeNode::~AROctreeNode() {
   }
 }
 
-void AROctreeNode::insert(const Particle &p, int index) {
+void AROctreeNode::insert(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (depth == maxDepth) {
     localBlock->addParticle(p);
@@ -33,15 +36,15 @@ void AROctreeNode::insert(const Particle &p, int index) {
     return;
   }
   if (*children == nullptr) {
-    if (localBlock->size < 1) {
+    if (localBlock->size < 16) {
       localBlock->addParticle(p);
     } else {
-      this->split(p, index);
+      this->split(p);
     }
     return;
   }
   auto bound_number = this->boundsCheck(p.getPosition());
-  this->children[bound_number]->insert(p, index);
+  this->children[bound_number]->insert(p);
 }
 
 int AROctreeNode::boundsCheck(MyMath::Vector3 p) const {
@@ -92,7 +95,7 @@ std::array<MyMath::BoundingBox, 8> AROctreeNode::childBounds() {
   return childrenBoxes;
 }
 
-void AROctreeNode::split(const Particle &p, int index) {
+void AROctreeNode::split(const Particle &p) {
   std::array<MyMath::BoundingBox, 8> childBoundingBoxes = childBounds();
   for (int i = 0; i < 8; ++i) {
     children[i] = new AROctreeNode(childBoundingBoxes[i], Multipole(),
@@ -102,16 +105,16 @@ void AROctreeNode::split(const Particle &p, int index) {
   for (int n = 0; n < localBlock->size; ++n) {
     Particle tmp_p = localBlock->deleteParticle(n);
     int childIndex = boundsCheck(tmp_p.getPosition());
-    children[childIndex]->insert(tmp_p, n);
+    children[childIndex]->insert(tmp_p);
   }
   // this->insert(p, index);
   int childIndex = boundsCheck(p.getPosition());
-  children[childIndex]->insert(p, index);
+  children[childIndex]->insert(p);
   localBlock.reset();
   return;
 }
 
-void AROctree::insert(const Particle &p, int index) { root->insert(p, index); };
+void AROctree::insert(const Particle &p) { root->insert(p); };
 
 AROctree::~AROctree() { root.reset(); };
 
@@ -121,6 +124,11 @@ AROctree::AROctree(const Cfx &cfx, Storage &storage)
   this->root = std::make_unique<AROctreeNode>(cfx, storage);
   std::cout << "Curr val: " << cfx.TreeMaxDepth << std::endl;
 };
+
+void AROctree::insert_batch(const std::vector<Particle> &dataSet) {
+  for (auto p : dataSet)
+    this->insert(p);
+}
 
 AROctreeNode *AROctree::get_root() { return root.get(); }
 

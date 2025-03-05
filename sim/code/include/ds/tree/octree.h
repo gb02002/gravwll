@@ -4,6 +4,7 @@
 #include <array>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 struct Multipole {
   double totalMass; // суммарная масса точек в узле Vector3 centerOfMass; //
@@ -36,8 +37,8 @@ private:
   Storage &storage;
 
   void setCalculatedCenter();
-  void insert(const Particle &P, int index);
-  void split(const Particle &P, int index);
+  void insert(const Particle &P);
+  void split(const Particle &P);
   int boundsCheck(MyMath::Vector3 p) const;
   std::array<MyMath::BoundingBox, 8> childBounds();
   int getChildIndex(const MyMath::Vector3 &p);
@@ -48,7 +49,8 @@ public:
   AROctree(const Cfx &cfx, Storage &storage);
   ~AROctree();
 
-  void insert(const Particle &p, int index);
+  void insert(const Particle &p);
+  void insert_batch(const std::vector<Particle> &dataSet);
   void print();
   AROctreeNode *get_root();
 

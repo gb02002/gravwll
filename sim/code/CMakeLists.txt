@@ -1,0 +1,6 @@
+find_package(raylib REQUIRED)
+if(raylib_FOUND)
+  message(STATUS "raylib найден")
+else()
+  message(FATAL_ERROR "raylib не найден!")
+endif()

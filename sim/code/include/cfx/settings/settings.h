@@ -52,6 +52,6 @@ private:
            [this](const std::string &val) {
              this->DataMode = StringToDataMode(val);
            }},
-          {"N", [this](const std::string &val) { this->N = std::stoi(val); }}};
+          {"n", [this](const std::string &val) { this->N = std::stoi(val); }}};
   const std::string ConfigFilePath = std::string(CONFIG_DIRECTORY);
 };

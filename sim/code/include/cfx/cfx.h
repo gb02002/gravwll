@@ -5,6 +5,8 @@
 #include <memory>
 #include <vector>
 
+enum SimState { RUN, STOP, EXIT };
+
 class Cfx {
 private:
   std::unique_ptr<Settings> settings;
@@ -17,6 +19,7 @@ public:
   MyMath::BoundingBox InitialBB;
   const unsigned short TreeMaxDepth;
   double TotalMass;
+  SimState state;
 
   std::vector<Particle> CreateDataSet();
 
