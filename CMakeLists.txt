@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.10)
+set(gravwll_root ${CMAKE_SOURCE_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${gravwll_root}/bin)
+project(gravwll)
+
+include(${gravwll_root}/cmake/options.cmake)
+
+if(ENABLE_TESTS)
+  enable_testing()
+  add_subdirectory(${gravwll_codebase})
+  add_subdirectory(${gravwll_tests_dir})
+else()
+  add_subdirectory(${gravwll_codebase})
+endif()

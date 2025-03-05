@@ -1,0 +1,90 @@
+#include "cfx/settings/settings.h"
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+Settings::Settings(int argc, char **argv) {
+  SetDefault();
+  ReadConfigFile();
+  ReadInput(argc, argv);
+};
+
+void Settings::ReadInput(int argc, char **argv) {
+  for (int i = 1; i < argc; ++i) {
+    std::string arg(argv[i]);
+
+    // Проверяем, есть ли алиас
+    if (ARG_ALIAS.find(arg) != ARG_ALIAS.end()) {
+      arg = ARG_ALIAS[arg]; // Приводим к стандартному имени
+    }
+
+    // Ищем ключ в основном словаре
+    if (ARG_MAP.find(arg) != ARG_MAP.end()) {
+      std::string value = (i + 1 < argc) ? argv[i + 1] : "";
+      if (!value.empty() && value[0] != '-' && ARG_MAP[arg]) {
+        ARG_MAP[arg](value);
+        ++i;
+      } else {
+        ARG_MAP[arg]("");
+      }
+    } else {
+      std::cerr << "Unknown argument: " << arg << std::endl;
+    }
+  }
+}
+
+void Settings::SetDefault() {
+  HEADLESS = false;
+  N = 1000;
+  VERBOSE = false;
+  DEBUG = false;
+  TreeMaxDepth = 10;
+};
+
+void Settings::SetUpValue(std::string &key, std::string &value) {
+  // Приводим ключ к нижнему регистру
+  std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+  // Проверяем в алиасах
+  if (ARG_ALIAS.find(key) != ARG_ALIAS.end()) {
+    key = ARG_ALIAS[key]; // Приводим к стандартному имени
+  }
+
+  // Проверяем в основном списке аргументов
+  if (ARG_MAP.find(key) == ARG_MAP.end()) {
+    throw std::invalid_argument("Configuration error. Unknown key found: " +
+                                key);
+  }
+
+  ARG_MAP[key](value);
+}
+
+void Settings::ReadConfigFile() {
+  std::ifstream is_file(ConfigFilePath);
+  if (!is_file.is_open())
+    throw std::runtime_error("Can't open config file");
+  std::string line;
+
+  while (std::getline(is_file, line)) {
+    std::istringstream is_line(line);
+    std::string key;
+    if (std::getline(is_line, key, '=')) {
+      std::string value;
+      if (std::getline(is_line, value))
+        SetUpValue(key, value);
+    }
+  }
+};
+PopuationDataMode StringToDataMode(const std::string &str) {
+  if (str == "CONFIG")
+    return CONFIG;
+  if (str == "NO_DATA")
+    return NO_DATA;
+  if (str == "GEN")
+    return GEN;
+  throw std::invalid_argument("Invalid PopuationDataMode value: " + str);
+}
