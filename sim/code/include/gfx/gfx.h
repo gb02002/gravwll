@@ -9,6 +9,7 @@ public:
 
   void Init();
   void Tick();
+  void Run();
   void CleanUp();
 
 private:

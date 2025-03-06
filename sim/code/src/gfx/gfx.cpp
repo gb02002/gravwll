@@ -3,6 +3,7 @@
 #include "ds/tree/octree.h"
 #include "raymath.h"
 #include <cstdio>
+#include <iostream>
 #include <memory>
 #include <raylib.h>
 
@@ -15,6 +16,7 @@ void GfxEngine::Tick() {
     cfx.state = EXIT;
     return;
   }
+
   this->CheckKeys();
   BeginDrawing();
   ClearBackground(BLACK);
@@ -82,16 +84,18 @@ void GfxEngine::UpdateCameraRotation(float rotationSpeedDegrees) {
 
 void GfxEngine::UpdateCameraPosition(float moveSpeed) {
   float deltaTime = GetFrameTime();
-  Vector3 forward =
-      Vector3Normalize(Vector3Subtract(Cam->target, Cam->position));
+  Vector3 forward = Vector3Normalize(
+      Vector3Subtract(Cam->camera.target, Cam->camera.position));
   Vector3 right =
       Vector3Normalize(Vector3CrossProduct(forward, {0.0f, 1.0f, 0.0f}));
 
   Vector3 movement = {0.0f, 0.0f, 0.0f};
-  if (IsKeyDown(KEY_W))
+  if (IsKeyDown(KEY_W)) {
     movement = Vector3Add(movement, forward);
-  if (IsKeyDown(KEY_S))
+  }
+  if (IsKeyDown(KEY_S)) {
     movement = Vector3Subtract(movement, forward);
+  }
   if (IsKeyDown(KEY_A))
     movement = Vector3Subtract(movement, right);
   if (IsKeyDown(KEY_D))
@@ -99,8 +103,8 @@ void GfxEngine::UpdateCameraPosition(float moveSpeed) {
 
   if (Vector3Length(movement) > 0.0f) {
     movement = Vector3Scale(Vector3Normalize(movement), moveSpeed * deltaTime);
-    Cam->position = Vector3Add(Cam->position, movement);
-    Cam->target = Vector3Add(Cam->target, movement);
+    Cam->camera.position = Vector3Add(Cam->camera.position, movement);
+    Cam->camera.target = Vector3Add(Cam->camera.target, movement);
   }
 };
 

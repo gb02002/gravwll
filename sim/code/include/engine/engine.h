@@ -21,7 +21,7 @@ public:
     return;
   };
 
-  int genCycle();
+  void MainCycle();
   void Init();
 
   std::unique_ptr<AROctree> tree;

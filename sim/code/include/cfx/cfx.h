@@ -20,6 +20,7 @@ public:
   const unsigned short TreeMaxDepth;
   double TotalMass;
   SimState state;
+  int FPS;
 
   std::vector<Particle> CreateDataSet();
 
