@@ -1,5 +1,6 @@
 #pragma once
 #include "raylib.h"
+#include <iostream>
 
 namespace MyMath {
 struct Vector3 {
@@ -34,7 +35,6 @@ inline Vector3 operator+(const Vector3 &a, const Vector3 &b) {
 inline Vector3 operator*(const Vector3 &v, double s) {
   return {v.x * s, v.y * s, v.z * s};
 }
-
 // Также можно перегрузить оператор для случая: скаляр * вектор
 inline Vector3 operator*(double s, const Vector3 &v) { return v * s; }
 
@@ -43,3 +43,5 @@ struct BoundingBox {
   MyMath::Vector3 max; // максимальные координаты по x, y, z
 };
 } // namespace MyMath
+std::ostream &operator<<(std::ostream &out, MyMath::Vector3 const &vec);
+std::ostream &operator<<(std::ostream &out, MyMath::BoundingBox const &bb);

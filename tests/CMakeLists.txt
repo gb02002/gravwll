@@ -5,6 +5,11 @@ add_subdirectory(googletest)
 
 add_executable(gravwll_unittests
     unittests/settings/input.cpp
+    unittests/tree/insert.cpp
+    unittests/tree/split.cpp
+    unittests/tree/boxes.cpp
+
+    unittests/physics/pairwise.cpp
 )
 
 target_include_directories(gravwll_unittests PRIVATE ${gravwll_headers}

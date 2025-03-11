@@ -29,7 +29,7 @@ public:
 private:
   Cfx &cfx;
   Storage storage;
-  int physicsTick();
+  int physicsTick(std::chrono::high_resolution_clock::time_point tickTime);
 
   std::vector<std::thread> threads;
 

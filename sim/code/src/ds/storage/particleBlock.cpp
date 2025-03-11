@@ -41,28 +41,34 @@ int ParticleBlock::addParticle(const Particle &p) {
 Particle ParticleBlock::deleteParticle(int index) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (index >= size)
-    return Particle{
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    };
+    return Particle{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
   size--;
 
+  // Возвращаем удаляемую частицу (до перезаписи)
   Particle p{
-      x[size],  y[size],  z[size],  vx[size], vy[size], vz[size],   fx[size],
-      fy[size], fz[size], ax[size], ay[size], az[size], mass[size],
+      x[index],  y[index],  z[index],    vx[index], vy[index],
+      vz[index], fx[index], fy[index],   fz[index], ax[index],
+      ay[index], az[index], mass[index],
   };
-  x[index] = x[size];
-  y[index] = y[size];
-  z[index] = z[size];
-  vx[index] = vx[size];
-  vy[index] = vy[size];
-  vz[index] = vz[size];
-  fx[index] = fx[size];
-  fy[index] = fy[size];
-  fz[index] = fz[size];
-  ax[index] = ax[size];
-  ay[index] = ay[size];
-  az[index] = az[size];
-  mass[index] = mass[size];
+
+  // Если удаляется не последний элемент, делаем перезапись
+  if (index != size) {
+    x[index] = x[size];
+    y[index] = y[size];
+    z[index] = z[size];
+    vx[index] = vx[size];
+    vy[index] = vy[size];
+    vz[index] = vz[size];
+    fx[index] = fx[size];
+    fy[index] = fy[size];
+    fz[index] = fz[size];
+    ax[index] = ax[size];
+    ay[index] = ay[size];
+    az[index] = az[size];
+    mass[index] = mass[size];
+  }
+
   return p;
 }
 
@@ -78,4 +84,12 @@ void ParticleBlock::printParticles() {
 MyMath::Vector3 ParticleBlock::getPosition(int N) {
   std::lock_guard<std::mutex> lock(m_mutex);
   return {this->x[N], this->y[N], this->z[N]};
+}
+
+Particle ParticleBlock::getParticle(int index) {
+  return Particle{
+      x[index],  y[index],  z[index],    vx[index], vy[index],
+      vz[index], fx[index], fy[index],   fz[index], ax[index],
+      ay[index], az[index], mass[index],
+  };
 }

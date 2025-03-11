@@ -44,3 +44,4 @@ private:
   double ax, ay, az;
   double mass;
 };
+std::ostream &operator<<(std::ostream &out, Particle const &p);

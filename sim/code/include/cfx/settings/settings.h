@@ -20,6 +20,8 @@ public:
   bool DEBUG;
   unsigned short TreeMaxDepth;
   PopuationDataMode DataMode;
+  int FPS = 60;
+  int IntegrationStep = 2000;
 
 private:
   void ReadInput(int argc, char **argv);
@@ -36,7 +38,10 @@ private:
       {"-d", "debug"},
       {"--data-mode", "datamode"},
       {"-dm", "datamode"},
-      {"--N", "N"}};
+      {"--fps", "fps"},
+      {"--integrationStep", "integrationstep"},
+      {"--N", "n"},
+      {"--n", "n"}};
 
   std::unordered_map<std::string, std::function<void(const std::string &)>>
       ARG_MAP = {
@@ -48,6 +53,12 @@ private:
            [this](const std::string &val) {
              this->TreeMaxDepth = std::stoi(val);
            }},
+          {"integrationstep",
+           [this](const std::string &val) {
+             this->IntegrationStep = std::stoi(val);
+           }},
+          {"fps",
+           [this](const std::string &val) { this->FPS = std::stoi(val); }},
           {"datamode",
            [this](const std::string &val) {
              this->DataMode = StringToDataMode(val);

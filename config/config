@@ -1,4 +1,6 @@
 HEADLESS=false
 DATAMODE=GEN
-TreeMaxDepth=10
-N=2000
+TreeMaxDepth=100
+N=20000
+FPS=80
+integrationStep=200

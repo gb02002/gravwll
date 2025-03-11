@@ -22,6 +22,7 @@ void Settings::ReadInput(int argc, char **argv) {
       arg = ARG_ALIAS[arg]; // Приводим к стандартному имени
     }
 
+    std::cout << arg << std::endl;
     // Ищем ключ в основном словаре
     if (ARG_MAP.find(arg) != ARG_MAP.end()) {
       std::string value = (i + 1 < argc) ? argv[i + 1] : "";
@@ -79,6 +80,7 @@ void Settings::ReadConfigFile() {
     }
   }
 };
+
 PopuationDataMode StringToDataMode(const std::string &str) {
   if (str == "CONFIG")
     return CONFIG;

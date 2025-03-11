@@ -1,5 +1,6 @@
 #include "cfx/cfx.h"
 #include "cfx/dataSets.h"
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -21,6 +22,10 @@ void Cfx::Init() { AdoptInitialValues(); }
 void Cfx::AdoptInitialValues() {
   std::cout << "In this function we need to retrive data from settings and "
                "prepare them for cfx\n";
+
+  InitialBB = {{0, 0, 0}, {1, 1, 1}};
+  IntegrationStepInMicroseconds =
+      std::chrono::microseconds(settings->IntegrationStep);
 }
 
 // Plammer to be implemented later

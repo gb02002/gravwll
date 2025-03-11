@@ -65,3 +65,12 @@ MyMath::Vector3 Particle::getPosition() const {
 MyMath::Vector3 Particle::getVelocity() const {
   return MyMath::Vector3{vx, vy, vz};
 }
+
+std::ostream &operator<<(std::ostream &out, Particle const &p) {
+  out << "Particle with " << p.getMass() << " mass ";
+  out << "has coords: {";
+  out << p.getX() << ":";
+  out << p.getY() << ":";
+  out << p.getZ() << "}";
+  return out;
+};

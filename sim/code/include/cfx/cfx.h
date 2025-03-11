@@ -2,16 +2,15 @@
 #include "core/bodies/particles.h"
 #include "settings/settings.h"
 #include "utils/namespaces/MyMath.h"
+#include <chrono>
 #include <memory>
 #include <vector>
 
 enum SimState { RUN, STOP, EXIT };
 
 class Cfx {
-private:
-  std::unique_ptr<Settings> settings;
-
 public:
+  std::unique_ptr<Settings> settings;
   Cfx(int argc, char **argv);
   Cfx();
   ~Cfx() = default;
@@ -20,7 +19,7 @@ public:
   const unsigned short TreeMaxDepth;
   double TotalMass;
   SimState state;
-  int FPS;
+  std::chrono::microseconds IntegrationStepInMicroseconds;
 
   std::vector<Particle> CreateDataSet();
 

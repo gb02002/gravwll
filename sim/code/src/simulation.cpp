@@ -21,4 +21,4 @@ void Simulation::Run() {
 
   gfx.Run();
   return;
-}
+};

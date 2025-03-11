@@ -138,7 +138,7 @@ void GfxEngine::UpdateCameraVerticalMovement(float moveSpeed) {
 
 std::unique_ptr<MyCamera3D> GfxEngine::InitRenderer() {
   // const int screenWidth = 1000, screenHeight = 600;
-  const int screenWidth = 1133, screenHeight = 800;
+  const int screenWidth = 2133, screenHeight = 1200;
   InitWindow(screenWidth, screenHeight, "Raylib: Камера и маленькие кубы");
 
   auto camera = std::make_unique<MyCamera3D>();
@@ -167,11 +167,17 @@ void GfxEngine::StartRenderTree() {
 void GfxEngine::RenderNode(AROctreeNode *node) {
   if (!node)
     return;
-  std::lock_guard<std::mutex> lock(node->getMutex());
+  // std::lock_guard<std::mutex> lock(node->getMutex());
 
   if (node->localBlock != nullptr) {
     auto nodeCenter = (node->bounds.min + node->bounds.max) * 0.5;
     auto nodeSize = node->bounds.max - node->bounds.min;
+    //
+    // std::cout << "nodeCenter: " << nodeCenter.x << nodeCenter.y <<
+    // nodeCenter.z
+    //           << std::endl;
+    // std::cout << "nodeSize: " << nodeSize.x << nodeSize.y << nodeSize.z
+    //           << std::endl;
 
     DrawCubeWires(
         {static_cast<float>(nodeCenter.x), static_cast<float>(nodeCenter.y),
@@ -183,7 +189,7 @@ void GfxEngine::RenderNode(AROctreeNode *node) {
       auto pos = node->localBlock->getPosition(i);
       DrawCube({static_cast<float>(pos.x), static_cast<float>(pos.y),
                 static_cast<float>(pos.z)},
-               0.001f, 0.001f, 0.001f, WHITE);
+               0.005f, 0.005f, 0.005f, WHITE);
     }
   }
 

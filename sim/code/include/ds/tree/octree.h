@@ -31,6 +31,8 @@ struct AROctreeNode {
 
   std::unique_ptr<ParticleBlock> localBlock;
 
+  void printOctreeMasses();
+
 private:
   mutable std::mutex m_mutex;
   int maxDepth;

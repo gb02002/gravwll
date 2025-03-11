@@ -18,6 +18,7 @@ public:
 
   void printParticles();
 
+  Particle getParticle(int index);
   // Универсальный шаблонный геттер, возвращающий ссылку на поле по указателю на
   // член
   template <std::array<double, N> ParticleBlock::*Member>
