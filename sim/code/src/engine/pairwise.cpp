@@ -10,7 +10,7 @@
 void calcBlocskAx(ParticleBlock &block) {
   std::lock_guard<std::mutex> lock(block.getMutex());
   for (int i = 0; i < block.size; ++i) {
-    for (int j = 0; j < block.size; ++j) {
+    for (int j = i + 1; j < block.size; ++j) {
       if (i == j)
         continue;
 

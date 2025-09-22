@@ -2,7 +2,7 @@
 
 /.cache
 /bash_scripts/*
-bin/
+bin/*
 build/
 docs/*
 build_tests/
@@ -10,11 +10,14 @@ config/*
 out/
 tests/googletest
 compile_commands.json
+gravwll_analisys/
 
 ## Standart
 # Prerequisites
 *.d
 
+# Somehow we got jetbrians injection
+.idea/
 # Compiled Object files
 *.slo
 *.lo

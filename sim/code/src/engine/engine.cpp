@@ -8,11 +8,11 @@
 #include <thread>
 #include <vector>
 
-// Главный цикл физики. Исполняется в своем потоке
 void PhysicsEngine::MainCycle() {
   std::cout << "Мы в основном цикле движка!";
   using namespace std::chrono;
 
+  // Начальное значение следующего тика
   auto nextTickTime =
       high_resolution_clock::now() + cfx.IntegrationStepInMicroseconds;
 
@@ -20,17 +20,25 @@ void PhysicsEngine::MainCycle() {
     auto startOfTick = high_resolution_clock::now();
     physicsTick(startOfTick);
 
-    std::this_thread::sleep_until(nextTickTime);
-    nextTickTime += cfx.IntegrationStepInMicroseconds;
-    // Тут надо как-то добавить случай, если вычисление слишком долгое и нам не
-    // приходится ждать. Надо вычислить, какое время заняло, и обновить
-    // cfx.IntegrationStepInMicroseconds. Плюс, надо держать в голове второй
-    // mode, где мы не имеем мин порог и стараемся его держаться, а всегда
-    // оптимизируемся по максимуму.
-  }
+    auto endOfTick = high_resolution_clock::now();
+    auto tickDuration = duration_cast<microseconds>(endOfTick - startOfTick);
 
+    // Если вычисление тика заняло больше времени, чем
+    // IntegrationStepInMicroseconds, обновляем nextTickTime, чтобы не ждать, а
+    // начать следующий тик сразу.
+    if (tickDuration > cfx.IntegrationStepInMicroseconds) {
+      // Можно также обновить интеграционный шаг, если требуется адаптивное
+      // управление:
+      cfx.IntegrationStepInMicroseconds = tickDuration;
+      nextTickTime = endOfTick;
+    } else {
+      // Если времени ещё осталось, ждем до следующего тика
+      std::this_thread::sleep_until(nextTickTime);
+      nextTickTime += cfx.IntegrationStepInMicroseconds;
+    }
+  }
   return;
-};
+}
 
 int countPoints(AROctreeNode *node) {
   if (!node)
@@ -76,10 +84,10 @@ void PhysicsEngine::Init() {
       {0.2, 0.2, 0.7, 0, 0, 0, 40 * 10e3}, // Октант 1 (high)
       //
       // {0.1, 0.6, 0.1, 0, 0, 0, 5.0}, // Октант 2 (low)
-      {0.2, 0.7, 0.2, 100, 0, 0, 3 * 10e4}, // Октант 2 (high)
+      {0.2, 0.7, 0.2, 100, 0, 0, 2 * 10e4}, // Октант 2 (high)
                                             //
       // {0.1, 0.6, 0.6, 0, 0, 0, 7.0}, // Октант 3 (low)
-      {0.2, 0.4, 0.7, 0, 0, 0, 3 * 10e4}, // Октант 3 (high)
+      {0.2, 0.4, 0.9, 0, 0, 0, 2 * 10e4}, // Октант 3 (high)
       //
       {0.6, 0.1, 0.1, 0, 0, 0, 10e4}, // Октант 4 (low)
       // {0.7, 0.2, 0.2, 0, 0, 0, 10.0}, // Октант 4 (high)
