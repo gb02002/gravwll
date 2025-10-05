@@ -1,4 +1,3 @@
-#include "cfx/cfx.h"
 #include "gfx/gfx.h"
 #include <chrono>
 #include <raylib.h>
@@ -6,14 +5,13 @@
 
 void GfxEngine::Run() {
   using namespace std::chrono;
-  milliseconds frameDuration(1000 / cfx.settings->FPS);
-  auto nextFrameTime = high_resolution_clock::now() + frameDuration;
+  auto start_reander_time = high_resolution_clock::now();
+  auto stepping = milliseconds(1000 / ctx.gfx().desired_fps);
+  auto next_frame_time = start_reander_time + stepping;
 
-  while (cfx.state != EXIT) {
+  while (ctx.state().is_running()) {
     Tick();
-
-    std::this_thread::sleep_until(nextFrameTime);
-
-    nextFrameTime += frameDuration;
+    std::this_thread::sleep_until(next_frame_time);
+    next_frame_time += stepping;
   }
 }

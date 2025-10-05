@@ -4,7 +4,7 @@
 /bash_scripts/*
 bin/*
 build/
-docs/*
+docs/unofficial
 build_tests/
 config/*
 out/

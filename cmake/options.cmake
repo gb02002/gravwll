@@ -27,7 +27,7 @@ set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
 set(GRAVWLL_CONFIG "${gravwll_config}/config")
-configure_file(${gravwll_codebase}/code/include/cfx/settings/config.h.in config.h)
+configure_file(${gravwll_codebase}/code/include/ctx/simulation_config.h simulation_config.h)
 include_directories(${CMAKE_BINARY_DIR})
 
 # add_compile_definitions(

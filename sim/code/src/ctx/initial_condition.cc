@@ -1,5 +1,6 @@
-#include "cfx/dataSets.h"
+#include "ctx/dataSets.h"
 #include <random>
+#include <vector>
 
 std::vector<Particle> GenerateRandomParticle(const int N) {
   std::random_device rd;
@@ -12,4 +13,4 @@ std::vector<Particle> GenerateRandomParticle(const int N) {
         Particle{dist(gen), dist(gen), dist(gen), 0.0, 0.0, 0.0, dist(gen)});
 
   return particles;
-}
+};

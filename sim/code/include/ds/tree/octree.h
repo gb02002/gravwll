@@ -1,5 +1,5 @@
 #pragma once
-#include "cfx/cfx.h"
+#include "ctx/ctx.h"
 #include "ds/storage/storage.h"
 #include <array>
 #include <memory>
@@ -25,11 +25,11 @@ struct AROctreeNode {
 
   AROctreeNode(MyMath::BoundingBox bounds, Multipole multipole, const int depth,
                const int maxDepth, Storage &storage);
-  AROctreeNode(const Cfx &cfx, Storage &storage);
+  AROctreeNode(Ctx &ctx, Storage &storage);
   ~AROctreeNode();
   std::mutex &getMutex() const { return m_mutex; };
 
-  std::unique_ptr<ParticleBlock> localBlock;
+  ParticleBlock *localBlock;
 
   void printOctreeMasses();
 
@@ -48,7 +48,7 @@ private:
 
 class AROctree {
 public:
-  AROctree(const Cfx &cfx, Storage &storage);
+  AROctree(Ctx &ctx, Storage &storage);
   ~AROctree();
 
   void insert(const Particle &p);

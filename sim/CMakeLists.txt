@@ -10,9 +10,10 @@ set(gravwll_source_code_dir ${gravwll_codebase}/code)
 add_subdirectory(${gravwll_source_code_dir})
 
 file(GLOB_RECURSE gravwll_sources CONFIGURE_DEPENDS ${gravwll_source_code_dir}/src/*.cpp)
+file(GLOB_RECURSE gravwll_sources1 CONFIGURE_DEPENDS ${gravwll_source_code_dir}/src/*.cc)
 file(GLOB_RECURSE gravwll_headers CONFIGURE_DEPENDS ${gravwll_source_code_dir}/include/*.h)
 
-add_library(${PROJECT_NAME} ${gravwll_sources} ${gravwll_headers})
+add_library(${PROJECT_NAME} ${gravwll_sources} ${gravwll_sources1} ${gravwll_headers})
 add_library(gravwll::simulation ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${gravwll_source_code_dir}/include)
 

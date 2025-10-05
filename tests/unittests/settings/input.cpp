@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #define private public
-#include "cfx/settings/settings.h"
+#include "ctx/settings/settings.h"
 
 TEST(SettingsTest, ReadInputParsesArgs) {
   char *argv[] = {(char *)"./test", (char *)"--headless", (char *)"--N",

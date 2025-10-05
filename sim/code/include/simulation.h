@@ -1,17 +1,18 @@
 #pragma once
+#include "ctx/simulation_config.h"
 #include "engine/engine.h"
 #include "gfx/gfx.h"
 
 class Simulation {
 public:
-  Simulation(int argc, char **argv);
+  Simulation(SimulationConfig &config);
 
-  void Init();
-  void Run();
+  void initialization();
+  void run();
   // void CleanUp();
 
 private:
-  Cfx cfx;
+  Ctx ctx;
   PhysicsEngine PE;
   GfxEngine gfx;
 };

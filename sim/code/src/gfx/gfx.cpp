@@ -1,19 +1,17 @@
 #include "gfx/gfx.h"
-#include "cfx/cfx.h"
+#include "ctx/ctx.h"
 #include "ds/tree/octree.h"
 #include "raymath.h"
-#include <cstdio>
-#include <iostream>
 #include <memory>
 #include <raylib.h>
 
-GfxEngine::GfxEngine(Cfx &cfx, AROctree &tree) : cfx(cfx), tree(tree) {};
+GfxEngine::GfxEngine(Ctx &ctx, AROctree &tree) : ctx(ctx), tree(tree) {};
 
 void GfxEngine::Init() { Cam = InitRenderer(); }
 
 void GfxEngine::Tick() {
   if (WindowShouldClose()) {
-    cfx.state = EXIT;
+    ctx.state().request_exit();
     return;
   }
 
@@ -185,8 +183,8 @@ void GfxEngine::RenderNode(AROctreeNode *node) {
         static_cast<float>(nodeSize.x), static_cast<float>(nodeSize.y),
         static_cast<float>(nodeSize.z), RED);
 
-    for (int i = 0; i < node->localBlock->size; ++i) {
-      auto pos = node->localBlock->getPosition(i);
+    for (int i = 0; i < node->localBlock->data_block.size; ++i) {
+      auto pos = node->localBlock->data_block.getPosition(i);
       DrawCube({static_cast<float>(pos.x), static_cast<float>(pos.y),
                 static_cast<float>(pos.z)},
                0.005f, 0.005f, 0.005f, WHITE);

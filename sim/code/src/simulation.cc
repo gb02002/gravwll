@@ -1,23 +1,25 @@
 #include "simulation.h"
+#include "ctx/simulation_config.h"
+#include "ctx/simulation_state.h"
 #include "engine/engine.h"
 #include "gfx/gfx.h"
 #include <iostream>
 
-Simulation::Simulation(int argc, char **argv)
-    : cfx(argc, argv), PE(cfx), gfx(cfx, *PE.tree.get()) {
+Simulation::Simulation(SimulationConfig &config)
+    : ctx(config), PE(ctx), gfx(ctx, *PE.tree.get()) {
   std::cout << "Simulation initialized!\n";
 };
 
-void Simulation::Init() {
+void Simulation::initialization() {
   std::cout << "Simulation::Init\n";
   PE.Init();
   gfx.Init();
   return;
 };
 
-void Simulation::Run() {
+void Simulation::run() {
   std::cout << "Simulation::Run\n";
-  cfx.state = RUN;
+  ctx.state().set_state(STATE::RUN);
 
   gfx.Run();
   return;

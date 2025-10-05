@@ -26,10 +26,23 @@ struct Vector3 {
   }
   Vector3(const ::Vector3 &v) : x(v.x), y(v.y), z(v.z) {}
 };
+
 // Перегрузка оператора сложения для удобства
 inline Vector3 operator+(const Vector3 &a, const Vector3 &b) {
   return {a.x + b.x, a.y + b.y, a.z + b.z};
 }
+
+// inline double operator[](const Vector3 &v, int inx) {
+//   match(inx) {
+//   case 0:
+//     return v.x;
+//   case 1:
+//     return v.y;
+//   case 2:
+//     return v.z;
+//   }
+//   return;
+// }
 
 // Перегрузка оператора умножения: вектор * скаляр
 inline Vector3 operator*(const Vector3 &v, double s) {

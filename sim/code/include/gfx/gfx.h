@@ -1,11 +1,11 @@
 #pragma once
-#include "cfx/cfx.h"
+#include "ctx/ctx.h"
 #include "ds/tree/octree.h"
 #include "gfx/camera.h"
 
 class GfxEngine {
 public:
-  explicit GfxEngine(Cfx &cfx, AROctree &tree);
+  explicit GfxEngine(Ctx &ctx, AROctree &tree);
 
   void Init();
   void Tick();
@@ -13,7 +13,7 @@ public:
   void CleanUp();
 
 private:
-  Cfx &cfx;
+  Ctx &ctx;
   AROctree &tree;
   std::unique_ptr<MyCamera3D> Cam;
   std::unique_ptr<MyCamera3D> InitRenderer();

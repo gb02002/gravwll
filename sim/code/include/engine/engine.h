@@ -11,7 +11,7 @@ class MultipoleInteractionElement {};
 
 class PhysicsEngine {
 public:
-  explicit PhysicsEngine(Cfx &cfx);
+  explicit PhysicsEngine(Ctx &ctx);
 
   ~PhysicsEngine() {
     for (int th_n = 0; th_n < threads.size(); ++th_n) {
@@ -27,8 +27,8 @@ public:
   std::unique_ptr<AROctree> tree;
 
 private:
-  Cfx &cfx;
-  Storage storage;
+  Ctx &ctx;
+  Storage &storage;
   int physicsTick(std::chrono::high_resolution_clock::time_point tickTime);
 
   std::vector<std::thread> threads;

@@ -43,26 +43,5 @@ private:
       {"--N", "n"},
       {"--n", "n"}};
 
-  std::unordered_map<std::string, std::function<void(const std::string &)>>
-      ARG_MAP = {
-          {"headless", [this](const std::string &) { this->HEADLESS = true; }},
-          {"verbose", [this](const std::string &) { this->VERBOSE = true; }},
-          {"debug", [this](const std::string &) { this->DEBUG = true; }},
-
-          {"treemaxdepth",
-           [this](const std::string &val) {
-             this->TreeMaxDepth = std::stoi(val);
-           }},
-          {"integrationstep",
-           [this](const std::string &val) {
-             this->IntegrationStep = std::stoi(val);
-           }},
-          {"fps",
-           [this](const std::string &val) { this->FPS = std::stoi(val); }},
-          {"datamode",
-           [this](const std::string &val) {
-             this->DataMode = StringToDataMode(val);
-           }},
-          {"n", [this](const std::string &val) { this->N = std::stoi(val); }}};
   const std::string ConfigFilePath = std::string(CONFIG_DIRECTORY);
 };

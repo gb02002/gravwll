@@ -1,5 +1,4 @@
 #include "engine/engine.h"
-#include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
 #include "engine/pairwise.h"
 #include <chrono>
@@ -14,27 +13,28 @@ void PhysicsEngine::MainCycle() {
 
   // Начальное значение следующего тика
   auto nextTickTime =
-      high_resolution_clock::now() + cfx.IntegrationStepInMicroseconds;
+      high_resolution_clock::now() + ctx.physics().integration_step;
 
-  while (cfx.state != EXIT) {
+  while (ctx.state().is_running()) {
     auto startOfTick = high_resolution_clock::now();
     physicsTick(startOfTick);
 
     auto endOfTick = high_resolution_clock::now();
-    auto tickDuration = duration_cast<microseconds>(endOfTick - startOfTick);
+    microseconds tickDuration =
+        duration_cast<microseconds>(endOfTick - startOfTick);
 
     // Если вычисление тика заняло больше времени, чем
     // IntegrationStepInMicroseconds, обновляем nextTickTime, чтобы не ждать, а
     // начать следующий тик сразу.
-    if (tickDuration > cfx.IntegrationStepInMicroseconds) {
+    if (tickDuration > ctx.physics().integration_step) {
       // Можно также обновить интеграционный шаг, если требуется адаптивное
       // управление:
-      cfx.IntegrationStepInMicroseconds = tickDuration;
+      ctx.physics().integration_step = tickDuration;
       nextTickTime = endOfTick;
     } else {
       // Если времени ещё осталось, ждем до следующего тика
       std::this_thread::sleep_until(nextTickTime);
-      nextTickTime += cfx.IntegrationStepInMicroseconds;
+      nextTickTime += ctx.physics().integration_step;
     }
   }
   return;
@@ -46,7 +46,7 @@ int countPoints(AROctreeNode *node) {
 
   int count = 0;
   if (node->localBlock != nullptr)
-    count += node->localBlock->size;
+    count += node->localBlock->data_block.size;
 
   // Рекурсивно обходим всех детей (предполагается, что children — массив из 8
   // элементов)
@@ -64,13 +64,13 @@ int PhysicsEngine::physicsTick(
   // Получаем корневой узел дерева
   AROctreeNode *root = tree->get_root();
   calcBlocskAx(*root->localBlock);
-  updateCoords(*root->localBlock, cfx.IntegrationStepInMicroseconds);
+  updateCoords(*root->localBlock, ctx.physics().integration_step);
   return 0;
 }
 
-PhysicsEngine::PhysicsEngine(Cfx &cfx)
-    : cfx(cfx), storage(Storage()),
-      tree(std::make_unique<AROctree>(cfx, storage)) {
+PhysicsEngine::PhysicsEngine(Ctx &ctx)
+    : ctx(ctx), storage(ctx.storage()),
+      tree(std::make_unique<AROctree>(ctx, ctx.storage())) {
   std::cout << "Engine got initialized!\n";
 };
 
