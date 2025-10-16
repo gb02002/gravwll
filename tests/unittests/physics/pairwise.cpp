@@ -13,11 +13,10 @@ TEST(PairWiseTests, TickComplitness) {
       Particle{2, 2, 2, 0, 0, 0, 2},
       Particle{3, 3, 3, 0, 0, 0, 3},
   };
-  Storage storage{};
-  std::unique_ptr<ParticleBlock> testBlock =
-      storage.createMemBlock(initial_data);
+  Storage storage{1};
+  ParticleBlock *testBlock = storage.create_memory_block(0, initial_data);
 
-  calcBlocskAX(*testBlock);
+  calcBlocskAx(*testBlock);
 
-  EXPECT_NE(testBlock->get_ax()[0], initial_data[0].getAx());
+  EXPECT_NE(testBlock->data_block.get_ax()[0], initial_data[0].getAx());
 };

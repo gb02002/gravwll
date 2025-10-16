@@ -5,13 +5,14 @@
 #include <memory>
 #include <raylib.h>
 
-GfxEngine::GfxEngine(Ctx &ctx, AROctree &tree) : ctx(ctx), tree(tree) {};
+GfxEngine::GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree)
+    : g_ctx(g_ctx), s_state(s_state), tree(tree) {};
 
 void GfxEngine::Init() { Cam = InitRenderer(); }
 
 void GfxEngine::Tick() {
   if (WindowShouldClose()) {
-    ctx.state().request_exit();
+    s_state.request_exit();
     return;
   }
 

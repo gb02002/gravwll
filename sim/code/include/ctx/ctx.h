@@ -1,8 +1,7 @@
 #pragma once
-// #include "ctx/initial_condition_generator.h"
-#include "ctx/simulation_config.h"
-#include "ctx/simulation_state.h"
 #include "ds/storage/storage.h"
+#include "simulation_config.h"
+#include "simulation_state.h"
 #include "utils/namespaces/MyMath.h"
 #include <chrono>
 #include <functional>
@@ -45,46 +44,44 @@ struct DataCtx {
   SimulationConfig::PUPULATION_MODE population_mode;
   size_t body_count = 0;
   int random_seed = 42;
+  const MyMath::BoundingBox bounding_box_ = {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
 
   static DataCtx from_config(const SimulationConfig &config) {
     return DataCtx{.population_mode = config.data_population_mode,
                    .body_count = static_cast<size_t>(config.kNBodies),
                    .random_seed = config.random_seed};
   }
+  const std::vector<Particle> access_dataset() { return initial_dataset; }
 };
 
 // Основной контекст - агрегирует специализированные контексты
 class Ctx {
 public:
-  // Фабричный метод для создания контекста
   static std::unique_ptr<Ctx> create(SimulationConfig config) {
     return std::make_unique<Ctx>(std::move(config));
   }
 
-  // Конструктор
   Ctx(SimulationConfig config);
 
-  // Доступ к специализированным контекстам
-  const GfxCtx &gfx() const { return gfx_ctx_; }
+  GfxCtx &gfx() { return gfx_ctx_; }
   PhysicsCtx &physics() { return physics_ctx_; }
-  const DataCtx &data() const { return data_ctx_; }
+  DataCtx &data() { return data_ctx_; }
 
-  // Доступ к общему состоянию
   SimulationState &state() { return state_; }
   const SimulationState &state() const { return state_; }
 
-  // Доступ к хранилищу
   Storage &storage() { return std::ref(storage_); }
   const Storage &storage() const { return storage_; }
 
-  // Bounding box для пространственных операций
-  const MyMath::BoundingBox &bounding_box() const { return bounding_box_; }
+  const MyMath::BoundingBox &bounding_box() const {
+    return data_ctx_.bounding_box_;
+  }
 
-  // Обновление состояния
   void update_state(STATE new_state);
 
-  // Валидация контекста
   bool validate() const;
+
+  std::vector<Particle> dataset;
 
 private:
   void initialize_components();
@@ -94,19 +91,7 @@ private:
   SimulationState state_;
   Storage storage_;
 
-  // Специализированные контексты
   GfxCtx gfx_ctx_;
   PhysicsCtx physics_ctx_;
   DataCtx data_ctx_;
-
-  // Пространственные параметры
-  const MyMath::BoundingBox bounding_box_ = {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
 };
-
-/* Это старый код, его надо перенести новые структуры
-std::unique_ptr<Settings> settings;
-const unsigned short TreeMaxDepth;
-double TotalMass;
-std::chrono::microseconds IntegrationStepInMicroseconds;
-
-*/

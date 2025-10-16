@@ -1,5 +1,6 @@
 #include "ds/tree/octree.h"
 #include "ds/storage/storage.h"
+#include "utils/namespaces/MyMath.h"
 #include <array>
 #include <iostream>
 #include <memory>
@@ -15,11 +16,13 @@ AROctreeNode::AROctreeNode(MyMath::BoundingBox bounds, Multipole multipole,
   localBlock = storage.create_memory_block(1, {});
 };
 
-AROctreeNode::AROctreeNode(Ctx &ctx, Storage &storage)
-    : bounds(ctx.bounding_box()), multipole(Multipole{}), depth(0),
-      maxDepth(ctx.physics().tree_depth()), storage(storage) {
+AROctreeNode::AROctreeNode(MyMath::BoundingBox &prime_bounds,
+                           const unsigned short tree_max_depth,
+                           Storage &storage)
+    : bounds(prime_bounds), multipole(Multipole{}), depth(0),
+      maxDepth(tree_max_depth), storage(storage) {
   setCalculatedCenter();
-  localBlock = storage.create_memory_block({}, {});
+  localBlock = storage.create_memory_block(1, {});
 };
 
 AROctreeNode::~AROctreeNode() {
@@ -118,11 +121,13 @@ void AROctree::insert(const Particle &p) { root->insert(p); };
 
 AROctree::~AROctree() { root.reset(); };
 
-AROctree::AROctree(Ctx &ctx, Storage &storage)
-    : maxDepth(ctx.physics().tree_depth()), storage(storage) {
+AROctree::AROctree(unsigned short max_tree_depth,
+                   MyMath::BoundingBox prime_bounds, Storage &storage)
+    : maxDepth(max_tree_depth), storage(storage) {
   std::cout << "The tree got initialized!\n";
-  this->root = std::make_unique<AROctreeNode>(ctx, storage);
-  std::cout << "Curr val: " << ctx.physics().tree_depth() << std::endl;
+  this->root =
+      std::make_unique<AROctreeNode>(prime_bounds, max_tree_depth, storage);
+  std::cout << "Curr val: " << max_tree_depth << std::endl;
 };
 
 void AROctree::insert_batch(const std::vector<Particle> &dataSet) {

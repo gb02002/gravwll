@@ -152,24 +152,18 @@ std::vector<Particle> generate_uniform(const MyMath::BoundingBox &box, size_t n,
   return particles;
 }
 
-// ... остальные реализации
-
 } // namespace generators
 
 namespace data_loader {
 
 std::vector<Particle> load_from_file(const std::string &filename) {
-  // Простая загрузка из файла
   std::vector<Particle> particles;
-  // ... реализация
   return particles;
 }
 
 std::vector<Particle> download_dataset(const std::string &dataset_name,
                                        size_t max_bodies) {
-  // Загрузка датасета
   std::vector<Particle> particles;
-  // ... реализация
   return particles;
 }
 

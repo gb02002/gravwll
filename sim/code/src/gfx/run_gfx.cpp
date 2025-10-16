@@ -6,10 +6,10 @@
 void GfxEngine::Run() {
   using namespace std::chrono;
   auto start_reander_time = high_resolution_clock::now();
-  auto stepping = milliseconds(1000 / ctx.gfx().desired_fps);
+  auto stepping = milliseconds(1000 / g_ctx.desired_fps);
   auto next_frame_time = start_reander_time + stepping;
 
-  while (ctx.state().is_running()) {
+  while (s_state.is_running()) {
     Tick();
     std::this_thread::sleep_until(next_frame_time);
     next_frame_time += stepping;

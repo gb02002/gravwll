@@ -1,5 +1,4 @@
 #pragma once
-#include "ctx/ctx.h"
 #include "ds/storage/storage.h"
 #include <array>
 #include <memory>
@@ -25,7 +24,8 @@ struct AROctreeNode {
 
   AROctreeNode(MyMath::BoundingBox bounds, Multipole multipole, const int depth,
                const int maxDepth, Storage &storage);
-  AROctreeNode(Ctx &ctx, Storage &storage);
+  AROctreeNode(MyMath::BoundingBox &prime_bounds,
+               const unsigned short tree_max_depth, Storage &storage);
   ~AROctreeNode();
   std::mutex &getMutex() const { return m_mutex; };
 
@@ -48,7 +48,8 @@ private:
 
 class AROctree {
 public:
-  AROctree(Ctx &ctx, Storage &storage);
+  AROctree(unsigned short max_tree_depth, MyMath::BoundingBox prime_bounds,
+           Storage &storage);
   ~AROctree();
 
   void insert(const Particle &p);

@@ -22,7 +22,7 @@ void Ctx::initialize_components() {
 
   try {
     // 1. сначала генератор
-    auto dataset = create_initial_dataset();
+    dataset = create_initial_dataset();
 
     if (!validate()) {
       throw std::runtime_error("Context validation failed!");
@@ -55,7 +55,7 @@ std::vector<Particle> Ctx::create_initial_dataset() {
                                         generator_structs::PlummerParams{});
 
   case SimulationConfig::PUPULATION_MODE::UNIFORM:
-    return generators::generate_uniform(bounding_box_, data_ctx_.body_count,
+    return generators::generate_uniform(bounding_box(), data_ctx_.body_count,
                                         data_ctx_.random_seed);
 
   case SimulationConfig::PUPULATION_MODE::FILE:

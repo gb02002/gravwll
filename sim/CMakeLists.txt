@@ -17,7 +17,12 @@ add_library(${PROJECT_NAME} ${gravwll_sources} ${gravwll_sources1} ${gravwll_hea
 add_library(gravwll::simulation ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${gravwll_source_code_dir}/include)
 
-add_definitions(-DGRAVWLL_CONFIG_PATH="${gravwll_config}")
+set(CONFIG_PATH "${GRAVWLL_CONFIG_DIR_PATH}")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/code/include/ctx/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/code/include/ctx/config.h @ONLY)
+target_include_directories(simulation PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/code/include
+)
 add_executable(simulation_bin ${gravwll_source_code_dir}/main.cpp)
 
 target_include_directories(simulation_bin PRIVATE ${gravwll_source_code_dir}/include)

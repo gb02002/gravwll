@@ -26,8 +26,9 @@ list(APPEND CMAKE_MODULE_PATH
 set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
-set(GRAVWLL_CONFIG "${gravwll_config}/config")
-configure_file(${gravwll_codebase}/code/include/ctx/simulation_config.h simulation_config.h)
+set(GRAVWLL_CONFIG_DIR_PATH "${gravwll_config}")
+message(STATUS "This is is GRAVWLL_CONFIG_DIR_PATH: ${GRAVWLL_CONFIG_DIR_PATH}")
+# configure_file(${gravwll_codebase}/code/include/ctx/simulation_config.h simulation_config.h)
 include_directories(${CMAKE_BINARY_DIR})
 
 # add_compile_definitions(

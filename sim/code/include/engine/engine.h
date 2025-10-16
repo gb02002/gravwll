@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ctx/ctx.h"
+#include "ctx/simulation_state.h"
 #include "ds/tree/octree.h"
 #include <memory>
 #include <thread>
@@ -11,7 +13,8 @@ class MultipoleInteractionElement {};
 
 class PhysicsEngine {
 public:
-  explicit PhysicsEngine(Ctx &ctx);
+  explicit PhysicsEngine(PhysicsCtx &p_ctx, SimulationState &state,
+                         Storage &storage, DataCtx &d_ctx);
 
   ~PhysicsEngine() {
     for (int th_n = 0; th_n < threads.size(); ++th_n) {
@@ -27,7 +30,9 @@ public:
   std::unique_ptr<AROctree> tree;
 
 private:
-  Ctx &ctx;
+  PhysicsCtx &p_ctx;
+  DataCtx &d_ctx;
+  SimulationState &state;
   Storage &storage;
   int physicsTick(std::chrono::high_resolution_clock::time_point tickTime);
 

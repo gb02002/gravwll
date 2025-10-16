@@ -1,11 +1,12 @@
 #pragma once
 #include "ctx/ctx.h"
+#include "ctx/simulation_state.h"
 #include "ds/tree/octree.h"
 #include "gfx/camera.h"
 
 class GfxEngine {
 public:
-  explicit GfxEngine(Ctx &ctx, AROctree &tree);
+  explicit GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree);
 
   void Init();
   void Tick();
@@ -13,7 +14,8 @@ public:
   void CleanUp();
 
 private:
-  Ctx &ctx;
+  GfxCtx &g_ctx;            // gfx context
+  SimulationState &s_state; // shared state
   AROctree &tree;
   std::unique_ptr<MyCamera3D> Cam;
   std::unique_ptr<MyCamera3D> InitRenderer();

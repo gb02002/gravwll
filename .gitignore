@@ -6,12 +6,12 @@ bin/*
 build/
 docs/unofficial
 build_tests/
-config/*
+# config/*
 out/
 tests/googletest
 compile_commands.json
 gravwll_analisys/
-
+sim/code/include/ctx/config.h
 ## Standart
 # Prerequisites
 *.d

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <string>
-#define CONFIG_DIRECTORY "@GRAVWLL_CONFIG@"
-const std::string ConfigFilePath = CONFIG_DIRECTORY;
-
+#include "config.h"
 #include <functional>
+#include <string>
 #include <sys/types.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -47,17 +45,17 @@ public:
 
   ConfigFileReader() = default;
   ConfigFileReader(const std::string &config_directory);
-  ConfigData read_config(const std::string &filename = "config.conf");
+  ConfigData read_config(const std::string &filename);
 
 private:
-  std::string config_directory_;
+  std::string config_directory_ = CONFIG_DIRECTORY;
 };
 }; // namespace config
 
 struct SimulationConfig {
   SimulationConfig();
   bool validate() const;
-  bool kHeadless = false; // инициализация по умолчанию
+  bool kHeadless = false;
   int kNBodies = 0;
   bool kVerbose = false;
   bool kDebug = false;
@@ -65,7 +63,7 @@ struct SimulationConfig {
   ushort kFpsDesired = 0;
   uint integration_step = 0;
   int random_seed = 0;
-  std::string filename; // изменено с ссылки на значение
+  std::string filename;
   std::string data_set_name;
   std::string fetch_url;
 
@@ -82,6 +80,7 @@ struct SimulationConfig {
 
   PUPULATION_MODE from_string(const std::string &value);
 };
+
 // Must return raw values to be processed later in Context
 class SimulationConfigBuilder {
 public:
@@ -122,8 +121,7 @@ private:
 public:
   SimulationConfigBuilder &with_defaults();
   SimulationConfigBuilder &
-  with_config_file(const std::string &filename =
-                       "/home/jay/work/my_projs/gravwll/config/config.conf");
+  with_config_file(const std::string &filename = "config.conf");
   SimulationConfigBuilder &with_command_line(int argc, char **argv);
   SimulationConfig build();
 
