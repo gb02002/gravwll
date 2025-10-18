@@ -11,5 +11,6 @@ int main(int argc, char **argv) {
   auto sim = Simulation(config);
   sim.initialization();
   sim.run();
+  std::cout << "we exit" << std::endl;
   return 0;
 }

@@ -12,7 +12,6 @@ ParticleBlock::ParticleBlock(uint morton_key,
     this->data_block.addParticle(p);
   };
 };
-ParticleBlock::~ParticleBlock() {};
 
 int ParticleBlock::DataBlock::addParticle(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);

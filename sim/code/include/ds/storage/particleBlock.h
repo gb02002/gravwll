@@ -12,11 +12,12 @@ class ParticleBlock {
 public:
   ParticleBlock(uint morton_key, const std::vector<Particle> &particles);
   ParticleBlock(const ParticleBlock &) = delete;
+  ParticleBlock() = default;
 
   ParticleBlock &operator=(const ParticleBlock &) = delete;
   ParticleBlock(ParticleBlock &&other) noexcept;
   ParticleBlock &operator=(ParticleBlock &&other) noexcept;
-  ~ParticleBlock();
+  ~ParticleBlock() = default;
 
   void swap(ParticleBlock &other) noexcept;
   void initialize() { std::cout << "we must impl part initialize\n"; }

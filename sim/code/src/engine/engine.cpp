@@ -105,10 +105,14 @@ void PhysicsEngine::Init() {
   //     // {0.7, 0.7, 0.7, 0, 0, 0, 16.0}, // Октант 7 (high)
   //     // {0.65, 0.65, 0.65, 0, 0, 0, 199.0}};
   // };
+  std::cout << "pe init1" << std::endl;
   InitThreads();
+  std::cout << "pe init2" << std::endl;
 
   std::thread PEthread(&PhysicsEngine::MainCycle, this);
+  std::cout << "pe init3" << std::endl;
   PEthread.detach();
+  std::cout << "pe init4" << std::endl;
 }
 
 void PhysicsEngine::InitThreads() {

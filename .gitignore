@@ -1,17 +1,21 @@
 ## Custom
 
 /.cache
-/bash_scripts/*
-bin/*
-build/
-docs/unofficial
-build_tests/
-# config/*
-out/
+bin
+build
+docs/personal
+build_tests
+out
 tests/googletest
 compile_commands.json
-gravwll_analisys/
+gravwll_analisys
 sim/code/include/ctx/config.h
+
+## Benchmarking
+benchmarks/**/*.bench
+benchmarks/**/*.data
+benchmarks/**/*.data.old
+
 ## Standart
 # Prerequisites
 *.d

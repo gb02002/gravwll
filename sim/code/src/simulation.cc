@@ -14,15 +14,19 @@ Simulation::Simulation(SimulationConfig &config)
 
 void Simulation::initialization() {
   std::cout << "Simulation::Init\n";
-  // PE.Init();
-  // gfx.Init();
+  PE.Init();
+  if (!ctx.gfx().headless) {
+    std::cout << "Gfx init called\n";
+    gfx.Init();
+  }
   return;
 };
 
 void Simulation::run() {
   std::cout << "Simulation::Run\n";
-  // ctx.state().set_state(STATE::RUN);
+  ctx.state().set_state(STATE::RUN);
 
-  // gfx.Run();
+  if (!ctx.gfx().headless)
+    gfx.Run();
   return;
 };

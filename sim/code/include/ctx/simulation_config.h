@@ -76,9 +76,11 @@ struct SimulationConfig {
     FETCH,
     ERROR
   };
+
   PUPULATION_MODE data_population_mode = ERROR;
 
   PUPULATION_MODE from_string(const std::string &value);
+  bool process_bools(const std::string &value);
 };
 
 // Must return raw values to be processed later in Context
@@ -86,9 +88,18 @@ class SimulationConfigBuilder {
 public:
   SimulationConfigBuilder() {
     arg_map_ = {
-        {"headless", [this](const std::string &) { config_.kHeadless = true; }},
-        {"verbose", [this](const std::string &) { config_.kVerbose = true; }},
-        {"debug", [this](const std::string &) { config_.kDebug = true; }},
+        {"headless",
+         [this](const std::string &val) {
+           config_.kHeadless = config_.process_bools(val);
+         }},
+        {"verbose",
+         [this](const std::string &val) {
+           config_.kVerbose = config_.process_bools(val);
+         }},
+        {"debug",
+         [this](const std::string &val) {
+           config_.kDebug = config_.process_bools(val);
+         }},
         {"treemaxdepth",
          [this](const std::string &val) {
            config_.kTreeMaxDepth = std::stoi(val);

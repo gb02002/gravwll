@@ -72,6 +72,19 @@ SimulationConfig SimulationConfigBuilder::build() {
 config::ConfigFileReader::ConfigFileReader(
     const std::string &config_directory) {};
 
+bool SimulationConfig::process_bools(const std::string &value) {
+  std::string tmp_ = value;
+  std::transform(value.begin(), value.end(), tmp_.begin(), ::tolower);
+
+  if (tmp_ == "true")
+    return true;
+  else if (tmp_ == "false") {
+    return false;
+  } else {
+    throw std::runtime_error("We have wrong bool value in config/cli");
+  }
+}
+
 SimulationConfig::PUPULATION_MODE
 SimulationConfig::from_string(const std::string &value) {
   std::cout << "we are in SimulationConfig::from_string. Value is: " << value
@@ -130,6 +143,7 @@ config::ConfigFileReader::read_config(const std::string &filename) {
 
         if (!key.empty()) {
           std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+          std::transform(value.begin(), value.end(), value.begin(), ::tolower);
           // std::cout << "This is a key-value we proccess: " << key << "-"
           //           << value << std::endl;
           result.values[key] = value;
