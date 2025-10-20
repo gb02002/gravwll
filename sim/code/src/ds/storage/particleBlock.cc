@@ -5,13 +5,15 @@
 #include <utility>
 #include <vector>
 
+ParticleBlock::DataBlock(const std::vector<Particle> &particles) {
+  for (auto i : particles) {
+    addParticles(p);
+  }
+}
+
 ParticleBlock::ParticleBlock(uint morton_key,
-                             const std::vector<Particle> &particles) {
-  meta_block.key = MortonKey{morton_key};
-  for (auto p : particles) {
-    this->data_block.addParticle(p);
-  };
-};
+                             const std::vector<Particle> &particles)
+    : data_block(particles), meta_block(MortonKey{morton_key}) {};
 
 int ParticleBlock::DataBlock::addParticle(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);

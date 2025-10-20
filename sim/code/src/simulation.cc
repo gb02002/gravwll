@@ -6,9 +6,7 @@
 
 Simulation::Simulation(SimulationConfig &config)
     : ctx(config), PE(ctx.physics(), ctx.state(), ctx.storage(), ctx.data()),
-      gfx(ctx.gfx(), ctx.state(), *PE.tree.get())
-
-{
+      gfx(ctx.gfx(), ctx.state(), *PE.tree.get()) {
   std::cout << "Simulation initialized!\n";
 };
 

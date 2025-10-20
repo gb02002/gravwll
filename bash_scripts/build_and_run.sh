@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 # Must read how to check if proj needs rebuild
 # rm bin/simulation_bin
@@ -13,7 +14,7 @@ cd build || {
   echo "Couldn't enter build folder"
   exit 1
 }
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 make "-j$(nproc)"
 cd ../bin/ || exit

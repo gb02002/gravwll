@@ -1,5 +1,6 @@
 #pragma once
 #include "core/bodies/particles.h"
+#include "utils/namespaces/error_namespace.h"
 #include <array>
 #include <mutex>
 #include <vector>
@@ -20,10 +21,10 @@ public:
   ~ParticleBlock() = default;
 
   void swap(ParticleBlock &other) noexcept;
-  void initialize() { std::cout << "we must impl part initialize\n"; }
+  void initialize() { debug::debug_print("we must impl part initialize"); }
 
   struct DataBlock {
-    // ParticleBlock::DataBlock(const std::vector<Particle> &particles);
+    DataBlock(const std::vector<Particle> &particles);
     static constexpr int N{4 * 6};
 
     int addParticle(const Particle &p);
@@ -136,6 +137,7 @@ public:
     uint next_logical_block; // Despite each leaf having 26 neighboars in IL,
                              // this represents memory layout
     MetaBlock() noexcept = default;
+    MetaBlock(MortonKey key) noexcept { this->key = key; };
     MetaBlock(MetaBlock &&other) noexcept = default;
     MetaBlock &operator=(MetaBlock &&other) noexcept = default;
   };

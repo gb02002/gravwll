@@ -1,3 +1,5 @@
+#define CURRENT_MODULE_DEBUG 1
+
 #include "ctx/ctx.h"
 #include "ctx/dataSets.h"
 #include "ctx/simulation_config.h"
@@ -7,7 +9,10 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
+
+using namespace error;
 
 Ctx::Ctx(SimulationConfig config)
     : config_(std::move(config)), storage_(config_.kNBodies),
@@ -22,7 +27,9 @@ void Ctx::initialize_components() {
 
   try {
     // 1. сначала генератор
-    dataset = create_initial_dataset();
+    data_ctx_.initial_dataset = create_initial_dataset();
+    debug::debug_print("CREATE_INITIAL_DATASET: len: {}",
+                       data_ctx_.access_dataset().size());
 
     if (!validate()) {
       throw std::runtime_error("Context validation failed!");
@@ -49,35 +56,67 @@ void Ctx::initialize_components() {
 
 std::vector<Particle> Ctx::create_initial_dataset() {
   switch (config_.data_population_mode) {
-  case SimulationConfig::PUPULATION_MODE::PLUMMER:
-    return generators::generate_plummer(data_ctx_.body_count,
-                                        data_ctx_.random_seed,
-                                        generator_structs::PlummerParams{});
-
-  case SimulationConfig::PUPULATION_MODE::UNIFORM:
-    return generators::generate_uniform(bounding_box(), data_ctx_.body_count,
-                                        data_ctx_.random_seed);
-
-  case SimulationConfig::PUPULATION_MODE::FILE:
-    if (config_.filename.empty()) {
-      throw std::runtime_error("Filename not specified for FILE mode");
+  case SimulationConfig::PUPULATION_MODE::PLUMMER: {
+    CResult<std::vector<Particle>> res = generators::generate_plummer(
+        data_ctx_.body_count, data_ctx_.random_seed,
+        generator_structs::PlummerParams{});
+    if (res.is_ok()) {
+      return res.unwrap();
+    } else {
+      debug::debug_print("PLUMMER failed: msg: {}", res.error_message());
+      return {};
     }
-    return data_loader::load_from_file(config_.filename);
+  }
 
-  case SimulationConfig::PUPULATION_MODE::FETCH:
+  case SimulationConfig::PUPULATION_MODE::UNIFORM: {
+    CResult<std::vector<Particle>> res = generators::generate_uniform(
+        bounding_box(), data_ctx_.body_count, data_ctx_.random_seed);
+    if (res.is_ok()) {
+      return res.unwrap();
+    } else {
+      debug::debug_print("UNIFORM failed: msg: {}", res.error_message());
+      return {};
+    }
+  }
+  case SimulationConfig::PUPULATION_MODE::FILE: {
+    CResult<std::vector<Particle>> res =
+        data_loader::load_from_file(config_.filename);
+    if (res.is_ok()) {
+      return res.unwrap();
+    } else {
+      debug::debug_print("generate_uniform failed: msg: {}",
+                         res.error_message());
+      return {};
+    }
+  }
+  case SimulationConfig::PUPULATION_MODE::FETCH: {
     if (config_.data_set_name.empty()) {
       throw std::runtime_error("Dataset name not specified for FETCH mode");
     }
-    return data_loader::download_dataset(config_.data_set_name,
-                                         data_ctx_.body_count);
-
+    CResult<std::vector<Particle>> res = data_loader::download_dataset(
+        config_.data_set_name, data_ctx_.body_count);
+    if (res.is_ok()) {
+      return res.unwrap();
+    } else {
+      debug::debug_print("generate_uniform failed: msg: {}",
+                         res.error_message());
+      return {};
+    }
+  }
   case SimulationConfig::PUPULATION_MODE::EMPTY:
     return generators::generate_empty();
 
-  case SimulationConfig::PUPULATION_MODE::KeplerianDisk:
-    return generators::generate_keplerian_disk(data_ctx_.body_count,
-                                               data_ctx_.random_seed);
-
+  case SimulationConfig::PUPULATION_MODE::KeplerianDisk: {
+    CResult<std::vector<Particle>> res = generators::generate_keplerian_disk(
+        data_ctx_.body_count, data_ctx_.random_seed);
+    if (res.is_ok()) {
+      return res.unwrap();
+    } else {
+      debug::debug_print("generate_uniform failed: msg: {}",
+                         res.error_message());
+      return {};
+    }
+  }
   default:
     throw std::runtime_error("Unknown population mode");
   }

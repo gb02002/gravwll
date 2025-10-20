@@ -81,8 +81,6 @@ public:
 
   bool validate() const;
 
-  std::vector<Particle> dataset;
-
 private:
   void initialize_components();
   std::vector<Particle> create_initial_dataset();

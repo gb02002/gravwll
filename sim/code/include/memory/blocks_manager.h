@@ -30,8 +30,8 @@ public:
 
 private:
   static uint compute_capacity(uint N_body) {
-    const uint estimated_blocks = (N_body / 8) * 2;
-    const uint min_blocks = 16;
+    const uint estimated_blocks = (N_body / 16) * 2;
+    const uint min_blocks = 10;
 
     return std::max(estimated_blocks, min_blocks);
   }

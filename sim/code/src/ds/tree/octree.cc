@@ -1,6 +1,8 @@
+#define CURRENT_MODULE_DEBUG 0
 #include "ds/tree/octree.h"
 #include "ds/storage/storage.h"
 #include "utils/namespaces/MyMath.h"
+#include "utils/namespaces/error_namespace.h"
 #include <array>
 #include <iostream>
 #include <memory>
@@ -33,6 +35,7 @@ AROctreeNode::~AROctreeNode() {
 
 void AROctreeNode::insert(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);
+  debug::debug_print("Мы в инверте");
   if (depth == maxDepth) {
     localBlock->data_block.addParticle(p);
     return;
@@ -41,7 +44,7 @@ void AROctreeNode::insert(const Particle &p) {
     if (localBlock->data_block.size < 16) {
       localBlock->data_block.addParticle(p);
     } else {
-      std::cout << "Мы сплипуемся";
+      debug::debug_print("Мы сплипуемся");
       this->split(p);
     }
     return;
@@ -96,14 +99,15 @@ std::array<MyMath::BoundingBox, 8> AROctreeNode::childBounds() {
   return childrenBoxes;
 }
 
+// TODO must get an array for each layer. Not complex as the size is fixed
 void AROctreeNode::split(const Particle &p) {
   std::array<MyMath::BoundingBox, 8> childBoundingBoxes = childBounds();
   for (int i = 0; i < 8; ++i) {
     children[i] = new AROctreeNode(childBoundingBoxes[i], Multipole(),
                                    depth + 1, maxDepth, storage);
   }
-  const int initialLbSize = localBlock->data_block.size;
-  for (int n = 0; n < initialLbSize; ++n) {
+  const int size_of_initial_block = localBlock->data_block.size;
+  for (int n = 0; n < size_of_initial_block; ++n) {
     Particle tmp_p = localBlock->data_block.deleteParticle(0);
     int childIndex = boundsCheck(tmp_p.getPosition());
     children[childIndex]->insert(tmp_p);
@@ -112,7 +116,6 @@ void AROctreeNode::split(const Particle &p) {
   int childIndex = boundsCheck(p.getPosition());
   children[childIndex]->insert(p);
   storage.release_block(this->localBlock);
-  // localBlock->release(); // idk what was intended
   localBlock = nullptr;
   return;
 }
@@ -127,12 +130,13 @@ AROctree::AROctree(unsigned short max_tree_depth,
   std::cout << "The tree got initialized!\n";
   this->root =
       std::make_unique<AROctreeNode>(prime_bounds, max_tree_depth, storage);
-  std::cout << "Curr val: " << max_tree_depth << std::endl;
 };
 
 void AROctree::insert_batch(const std::vector<Particle> &dataSet) {
-  for (auto p : dataSet)
+  debug::debug_print("insert_batch 11111, len dataSet: {}", dataSet.size());
+  for (auto p : dataSet) {
     this->insert(p);
+  }
 }
 
 AROctreeNode *AROctree::get_root() { return root.get(); }

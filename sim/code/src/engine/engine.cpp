@@ -28,12 +28,9 @@ void PhysicsEngine::MainCycle() {
     // IntegrationStepInMicroseconds, обновляем nextTickTime, чтобы не ждать, а
     // начать следующий тик сразу.
     if (tickDuration > p_ctx.integration_step) {
-      // Можно также обновить интеграционный шаг, если требуется адаптивное
-      // управление:
       p_ctx.integration_step = tickDuration;
       nextTickTime = endOfTick;
     } else {
-      // Если времени ещё осталось, ждем до следующего тика
       std::this_thread::sleep_until(nextTickTime);
       nextTickTime += p_ctx.integration_step;
     }
@@ -79,40 +76,10 @@ PhysicsEngine::PhysicsEngine(PhysicsCtx &p_ctx, SimulationState &state,
 };
 
 void PhysicsEngine::Init() {
-  // std::vector<Particle> initDataSet = {
-  //     {0.15, 0.1, 0.1, 0, 0, 0, 5.972 * 10e3}, // Октант 0 (low)
-  //     {0.9, 0.5, 0.9, 0, 0, 0, 6.39 * 10e4},   // Октант 7 (high)
-  //
-  //     // {0.1, 0.1, 0.6, 0, 0, 0, 3.0}, // Октант 1 (low)
-  //     {0.2, 0.2, 0.7, 0, 0, 0, 40 * 10e3}, // Октант 1 (high)
-  //     //
-  //     // {0.1, 0.6, 0.1, 0, 0, 0, 5.0}, // Октант 2 (low)
-  //     {0.2, 0.7, 0.2, 100, 0, 0, 2 * 10e4}, // Октант 2 (high)
-  //                                           //
-  //     // {0.1, 0.6, 0.6, 0, 0, 0, 7.0}, // Октант 3 (low)
-  //     {0.2, 0.4, 0.9, 0, 0, 0, 2 * 10e4}, // Октант 3 (high)
-  //     //
-  //     {0.6, 0.1, 0.1, 0, 0, 0, 10e4}, // Октант 4 (low)
-  //     // {0.7, 0.2, 0.2, 0, 0, 0, 10.0}, // Октант 4 (high)
-  //     //
-  //     {0.6, 0.1, 0.6, 0, 0, 0, 10e4}, // Октант 5 (low)
-  //     // {0.7, 0.2, 0.7, 0, 0, 0, 12.0}, // Октант 5 (high)
-  //     //
-  //     // {0.6, 0.6, 0.1, 0, 0, 0, 13.0}, // Октант 6 (low)
-  //     {0.7, 0.7, 0.2, 0, 0, 0, 1.0 * 10e4}, // Октант 6 (high)
-  //                                           //
-  //     {0.6, 0.6, 0.6, 0, 0, 0, 15.0},       // Октант 7 (low)
-  //     // {0.7, 0.7, 0.7, 0, 0, 0, 16.0}, // Октант 7 (high)
-  //     // {0.65, 0.65, 0.65, 0, 0, 0, 199.0}};
-  // };
-  std::cout << "pe init1" << std::endl;
   InitThreads();
-  std::cout << "pe init2" << std::endl;
 
   std::thread PEthread(&PhysicsEngine::MainCycle, this);
-  std::cout << "pe init3" << std::endl;
   PEthread.detach();
-  std::cout << "pe init4" << std::endl;
 }
 
 void PhysicsEngine::InitThreads() {

@@ -1,6 +1,9 @@
 #include "utils/generators.h"
 #include "core/bodies/particles.h"
 #include <random>
+#include <vector>
+
+using namespace error;
 
 double generate_plummer_radius(double u) {
   // Радиус по обратному преобразованию от кумулятивного распределения
@@ -93,11 +96,13 @@ void center_system(std::vector<Particle> &particles) {
 
 namespace generators {
 
-std::vector<Particle> generate_keplerian_disk(size_t n, int seed) { return {}; }
+CResult<std::vector<Particle>> generate_keplerian_disk(size_t n, int seed) {
+  return CResult<std::vector<Particle>>::error(1, "not implemented");
+}
 
 std::vector<Particle> generate_empty() { return {}; }
 
-std::vector<Particle>
+CResult<std::vector<Particle>>
 generate_plummer(size_t n, int seed = 42,
                  const generator_structs::PlummerParams &params =
                      generator_structs::PlummerParams{}) {
@@ -131,11 +136,11 @@ generate_plummer(size_t n, int seed = 42,
   // 5. Центрирование системы (опционально, но полезно)
   center_system(particles);
 
-  return particles;
+  return CResult<std::vector<Particle>>::success(std::move(particles));
 }
 
-std::vector<Particle> generate_uniform(const MyMath::BoundingBox &box, size_t n,
-                                       int seed) {
+CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
+                                                size_t n, int seed) {
   std::vector<Particle> particles;
   particles.reserve(n);
 
@@ -149,22 +154,24 @@ std::vector<Particle> generate_uniform(const MyMath::BoundingBox &box, size_t n,
         Particle{dist_x(rng), dist_y(rng), dist_z(rng), 0, 0, 0, 1.0});
   }
 
-  return particles;
+  return CResult<std::vector<Particle>>::success(std::move(particles));
 }
 
 } // namespace generators
 
 namespace data_loader {
 
-std::vector<Particle> load_from_file(const std::string &filename) {
-  std::vector<Particle> particles;
-  return particles;
+CResult<std::vector<Particle>> load_from_file(const std::string &filename) {
+  if (filename.empty()) {
+    throw std::runtime_error("Filename not specified for FILE mode");
+  }
+
+  return CResult<std::vector<Particle>>::error(1, "not implemented");
 }
 
-std::vector<Particle> download_dataset(const std::string &dataset_name,
-                                       size_t max_bodies) {
-  std::vector<Particle> particles;
-  return particles;
+CResult<std::vector<Particle>> download_dataset(const std::string &dataset_name,
+                                                size_t max_bodies) {
+  return CResult<std::vector<Particle>>::error(1, "not implemented");
 }
 
 } // namespace data_loader

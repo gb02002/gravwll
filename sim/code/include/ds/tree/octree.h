@@ -61,5 +61,4 @@ private:
   std::unique_ptr<AROctreeNode> root;
   int maxDepth;
   Storage &storage;
-  int minPointsPerNode;
 };
