@@ -45,6 +45,8 @@ struct DataCtx {
   size_t body_count = 0;
   int random_seed = 42;
   const MyMath::BoundingBox bounding_box_ = {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
+  // const MyMath::BoundingBox bounding_box_ = {{0.0, 0.0, 0.0},
+  // {4.0, 4.0, 2.0}};
 
   static DataCtx from_config(const SimulationConfig &config) {
     return DataCtx{.population_mode = config.data_population_mode,

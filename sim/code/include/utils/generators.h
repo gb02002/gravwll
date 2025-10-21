@@ -1,5 +1,6 @@
 #pragma once
 #include "core/bodies/particles.h"
+#include "utils/namespaces/MyMath.h"
 #include "utils/namespaces/error_namespace.h"
 #include <vector>
 
@@ -20,8 +21,9 @@ namespace generators {
 
 // Прямые функции для каждой модели
 CResult<std::vector<Particle>>
-generate_plummer(size_t n, int seed,
-                 const generator_structs::PlummerParams &params);
+generate_plummer(size_t n, const MyMath::BoundingBox &box, int seed = 42,
+                 const generator_structs::PlummerParams &params =
+                     generator_structs::PlummerParams{});
 CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
                                                 size_t n = 42, int seed = 42);
 CResult<std::vector<Particle>> generate_keplerian_disk(size_t n, int seed = 42);

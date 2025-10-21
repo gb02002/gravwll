@@ -1,6 +1,8 @@
 #include "utils/generators.h"
 #include "core/bodies/particles.h"
+#include "utils/namespaces/MyMath.h"
 #include <random>
+#include <raylib.h>
 #include <vector>
 
 using namespace error;
@@ -59,9 +61,10 @@ generate_plummer_velocity(double r, double u1, double u2,
   return {v * vx, v * vy, v * vz};
 }
 
-void center_system(std::vector<Particle> &particles) {
+void center_system(std::vector<Particle> &particles,
+                   const MyMath::Vector3 center) {
   // Центрирование системы по центру масс
-  MyMath::Vector3 com_position = {0, 0, 0};
+  MyMath::Vector3 com_position = center;
   MyMath::Vector3 com_velocity = {0, 0, 0};
   double total_mass = 0.0;
 
@@ -103,9 +106,8 @@ CResult<std::vector<Particle>> generate_keplerian_disk(size_t n, int seed) {
 std::vector<Particle> generate_empty() { return {}; }
 
 CResult<std::vector<Particle>>
-generate_plummer(size_t n, int seed = 42,
-                 const generator_structs::PlummerParams &params =
-                     generator_structs::PlummerParams{}) {
+generate_plummer(size_t n, const MyMath::BoundingBox &box, int seed,
+                 const generator_structs::PlummerParams &params) {
   std::vector<Particle> particles;
   particles.reserve(n);
 
@@ -133,8 +135,12 @@ generate_plummer(size_t n, int seed = 42,
     particles.push_back(Particle{position, velocity, mass_per_particle});
   }
 
+  auto center =
+      MyMath::Vector3{static_cast<double>((box.max.x - box.min.x) / 2),
+                      static_cast<double>(box.max.y - box.min.y) / 2,
+                      static_cast<double>(box.max.z - box.min.z) / 2};
   // 5. Центрирование системы (опционально, но полезно)
-  center_system(particles);
+  center_system(particles, center);
 
   return CResult<std::vector<Particle>>::success(std::move(particles));
 }

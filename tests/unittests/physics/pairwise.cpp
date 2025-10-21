@@ -18,5 +18,5 @@ TEST(PairWiseTests, TickComplitness) {
 
   calcBlocskAx(*testBlock);
 
-  EXPECT_NE(testBlock->data_block.get_ax()[0], initial_data[0].getAx());
+  EXPECT_NE(testBlock-.get_ax()[0], initial_data[0].getAx());
 };

@@ -3,6 +3,7 @@
 #include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
 #include "engine/pairwise.h"
+#include "utils/namespaces/error_namespace.h"
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -60,6 +61,7 @@ int countPoints(AROctreeNode *node) {
 int PhysicsEngine::physicsTick(
     std::chrono::high_resolution_clock::time_point tickTime) {
   // Получаем корневой узел дерева
+  debug::debug_print("We tick!");
   AROctreeNode *root = tree->get_root();
   calcBlocskAx(*root->localBlock);
   updateCoords(*root->localBlock, p_ctx.integration_step);

@@ -1,17 +1,23 @@
+#define CURRENT_MODULE_DEBUG 0
 #include "memory/blocks_arena.h"
 #include "ds/storage/particleBlock.h"
+#include "utils/namespaces/error_namespace.h"
 #include <cstddef>
 #include <cstdlib>
 
 ParticleBlock *BlocksAllocator::allocate() {
-  if (free_head >= capacity)
+  debug::debug_print("We entered BlocksAllocator::allocate");
+  if (free_head >= capacity) {
+    debug::debug_print("free_head is bigger or equal to capacity: {} >= {}",
+                       free_head, capacity);
     return nullptr;
-
+  }
   uint index = free_head;
   free_head = next_free_array[free_head];
   current_counter++;
 
   std::byte *block_ptr = base + index * block_size;
+  debug::debug_print("current_counter: {}", current_counter);
   return reinterpret_cast<ParticleBlock *>(block_ptr);
 }
 

@@ -1,5 +1,6 @@
 #include "ds/storage/storage.h"
 #include "ds/storage/particleBlock.h"
+#include <chrono>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -23,21 +24,10 @@ void Storage::release_block(ParticleBlock *block) {
 
 void Storage::transferParticle(ParticleBlock *fromBlock, ParticleBlock *toBlock,
                                int index) {
-  /*
-  std::cout << "we at least arrived here\n";
   std::cout << "TransferParticle: fromBlock = " << fromBlock
             << ", toBlock = " << toBlock << "\n";
-  std::cout << "fromBlock mutex = " << &(fromBlock->getMutex())
-            << ", toBlock mutex = " << &(toBlock->getMutex()) << "\n";
-
-  std::scoped_lock lock(fromBlock->getMutex(), toBlock->getMutex());
-  std::cout << "we locked our mutexes";
-  */
-
-  std::cout << "TransferParticle: fromBlock = " << fromBlock
-            << ", toBlock = " << toBlock << "\n";
-  auto &mutex1 = fromBlock->data_block.getMutex();
-  auto &mutex2 = toBlock->data_block.getMutex();
+  auto &mutex1 = fromBlock->get_mutex();
+  auto &mutex2 = toBlock->get_mutex();
   std::cout << "fromBlock mutex = " << &mutex1
             << ", toBlock mutex = " << &mutex2 << "\n";
 
@@ -49,7 +39,7 @@ void Storage::transferParticle(ParticleBlock *fromBlock, ParticleBlock *toBlock,
     } else {
       std::cout << "Не удалось захватить mutex " << lockResult
                 << ", повторяем попытку...\n";
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
   }
 
@@ -61,27 +51,27 @@ void Storage::transferParticle(ParticleBlock *fromBlock, ParticleBlock *toBlock,
   std::cout << "we locked our mutexes\n";
 
   // Читаем значения из fromBlock
-  double x = fromBlock->data_block.get_x()[index];
-  double y = fromBlock->data_block.get_y()[index];
-  double z = fromBlock->data_block.get_z()[index];
-  double vx = fromBlock->data_block.get_vx()[index];
-  double vy = fromBlock->data_block.get_vy()[index];
-  double vz = fromBlock->data_block.get_vz()[index];
-  double fx = fromBlock->data_block.get_fx()[index];
-  double fy = fromBlock->data_block.get_fy()[index];
-  double fz = fromBlock->data_block.get_fz()[index];
-  double ax = fromBlock->data_block.get_ax()[index];
-  double ay = fromBlock->data_block.get_ay()[index];
-  double az = fromBlock->data_block.get_az()[index];
-  double mass = fromBlock->data_block.get_mass()[index];
+  double x = fromBlock->get_x()[index];
+  double y = fromBlock->get_y()[index];
+  double z = fromBlock->get_z()[index];
+  double vx = fromBlock->get_vx()[index];
+  double vy = fromBlock->get_vy()[index];
+  double vz = fromBlock->get_vz()[index];
+  double fx = fromBlock->get_fx()[index];
+  double fy = fromBlock->get_fy()[index];
+  double fz = fromBlock->get_fz()[index];
+  double ax = fromBlock->get_ax()[index];
+  double ay = fromBlock->get_ay()[index];
+  double az = fromBlock->get_az()[index];
+  double mass = fromBlock->get_mass()[index];
 
   // Создаем конкретную частицу, используя конструктор
   Particle newParticle(x, y, z, vx, vy, vz, fx, fy, fz, ax, ay, az, mass);
 
   std::cout << "We created P!\n";
   // Добавляем частицу в целевой блок.
-  toBlock->data_block.addParticle(newParticle);
+  toBlock->addParticle(newParticle);
 
   // Удаляем частицу из исходного блока.
-  fromBlock->data_block.deleteParticle(index);
+  fromBlock->deleteParticle(index);
 }

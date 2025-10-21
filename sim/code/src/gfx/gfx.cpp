@@ -182,13 +182,13 @@ void GfxEngine::RenderNode(AROctreeNode *node) {
         {static_cast<float>(nodeCenter.x), static_cast<float>(nodeCenter.y),
          static_cast<float>(nodeCenter.z)},
         static_cast<float>(nodeSize.x), static_cast<float>(nodeSize.y),
-        static_cast<float>(nodeSize.z), RED);
+        static_cast<float>(nodeSize.z), WHITE);
 
     for (int i = 0; i < node->localBlock->data_block.size; ++i) {
-      auto pos = node->localBlock->data_block.getPosition(i);
+      auto pos = node->localBlock->getPosition(i);
       DrawCube({static_cast<float>(pos.x), static_cast<float>(pos.y),
                 static_cast<float>(pos.z)},
-               0.005f, 0.005f, 0.005f, WHITE);
+               0.005f, 0.005f, 0.005f, RED);
     }
   }
 

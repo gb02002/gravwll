@@ -30,10 +30,25 @@ public:
 
 private:
   static uint compute_capacity(uint N_body) {
-    const uint estimated_blocks = (N_body / 16) * 2;
-    const uint min_blocks = 10;
+    // Базовое количество блоков (округление вверх)
+    const uint base_blocks = (N_body + 15) / 16;
 
-    return std::max(estimated_blocks, min_blocks);
+    // Эмпирические коэффициенты на основе тестирования октодеревьев:
+    // - Множитель 4-6 хорошо работает для средних деревьев
+    // - Учитываем что при делении получается 8 новых блоков
+    // - Минимальный размер дает место для начального роста
+
+    const uint multiplier = 6;  // эмпирически подобранный множитель
+    const uint min_blocks = 32; // минимум для 2 уровней дерева (1 + 8)
+    const uint max_blocks = std::max(N_body * 2, 1000000u); // разумный предел
+
+    uint estimated_blocks = base_blocks * multiplier;
+
+    // Гарантируем, что выделенного места хватит хотя бы на 2 уровня деления
+    estimated_blocks = std::max(estimated_blocks, min_blocks);
+
+    // Защита от астрономических значений
+    return std::min(estimated_blocks, max_blocks);
   }
   BlocksAllocator arena_;
   std::vector<bool> active_blocks_;

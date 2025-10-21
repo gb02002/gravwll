@@ -37,12 +37,12 @@ void AROctreeNode::insert(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);
   debug::debug_print("Мы в инверте");
   if (depth == maxDepth) {
-    localBlock->data_block.addParticle(p);
+    localBlock->addParticle(p);
     return;
   }
   if (*children == nullptr) {
     if (localBlock->data_block.size < 16) {
-      localBlock->data_block.addParticle(p);
+      localBlock->addParticle(p);
     } else {
       debug::debug_print("Мы сплипуемся");
       this->split(p);
@@ -108,7 +108,7 @@ void AROctreeNode::split(const Particle &p) {
   }
   const int size_of_initial_block = localBlock->data_block.size;
   for (int n = 0; n < size_of_initial_block; ++n) {
-    Particle tmp_p = localBlock->data_block.deleteParticle(0);
+    Particle tmp_p = localBlock->deleteParticle(0);
     int childIndex = boundsCheck(tmp_p.getPosition());
     children[childIndex]->insert(tmp_p);
   }
@@ -158,7 +158,7 @@ void AROctreeNode::printOctreeMasses() {
   // Если узел содержит частички, выводим массы
   if (this->localBlock) {
     for (int i = 0; i < this->localBlock->data_block.size; ++i) {
-      double m = this->localBlock->data_block.getParticle(i).getMass();
+      double m = this->localBlock->getParticle(i).getMass();
       std::cout << m;
       if (i < this->localBlock->data_block.size - 1)
         std::cout << ", ";

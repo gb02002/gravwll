@@ -58,7 +58,7 @@ std::vector<Particle> Ctx::create_initial_dataset() {
   switch (config_.data_population_mode) {
   case SimulationConfig::PUPULATION_MODE::PLUMMER: {
     CResult<std::vector<Particle>> res = generators::generate_plummer(
-        data_ctx_.body_count, data_ctx_.random_seed,
+        data_ctx_.body_count, data_ctx_.bounding_box_, data_ctx_.random_seed,
         generator_structs::PlummerParams{});
     if (res.is_ok()) {
       return res.unwrap();
