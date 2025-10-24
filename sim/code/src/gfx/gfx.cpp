@@ -2,17 +2,31 @@
 #include "ctx/ctx.h"
 #include "ds/tree/octree.h"
 #include "raymath.h"
+#include "utils/namespaces/error_namespace.h"
 #include <memory>
 #include <raylib.h>
 
 GfxEngine::GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree)
     : g_ctx(g_ctx), s_state(s_state), tree(tree) {};
 
-void GfxEngine::Init() { Cam = InitRenderer(); }
+void GfxEngine::init() {
+  switch (g_ctx.backend) {
+  case (GfxCtx::GfxBackend::OpenGL):
+    debug::debug_print("We are using OpenGL");
+    Cam = InitRenderer();
+    break;
+  case (GfxCtx::GfxBackend::Vulkan):
+    debug::debug_print("We are using Vulkan");
+    // init_vulkan();
+    init_vulkan1();
+    debug::debug_print("We exited init_vulkan1");
+    break;
+  }
+}
 
-void GfxEngine::Tick() {
+void GfxEngine::tick() {
   if (WindowShouldClose()) {
-    s_state.request_exit();
+    // s_state.request_exit();
     return;
   }
 
@@ -27,7 +41,7 @@ void GfxEngine::Tick() {
   EndDrawing();
 }
 
-void GfxEngine::CleanUp() { CloseWindow(); }
+void GfxEngine::clean_up() { CloseWindow(); }
 
 void GfxEngine::CheckKeys() {
   if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_UP) ||

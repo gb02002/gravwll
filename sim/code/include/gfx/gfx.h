@@ -8,10 +8,10 @@ class GfxEngine {
 public:
   explicit GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree);
 
-  void Init();
-  void Tick();
-  void Run();
-  void CleanUp();
+  void init();
+  void tick();
+  void run();
+  void clean_up();
 
 private:
   GfxCtx &g_ctx;            // gfx context
@@ -28,4 +28,6 @@ private:
 
   void StartRenderTree();
   void RenderNode(AROctreeNode *node);
+  void init_vulkan1();
+  void init_vulkan();
 };

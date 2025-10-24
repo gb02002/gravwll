@@ -11,12 +11,16 @@ compile_commands.json
 gravwll_analisys
 sim/code/include/ctx/config.h
 
-## Benchmarking
+# Benchmarking
 benchmarks/**/*.bench
 benchmarks/**/*.data
 benchmarks/**/*.data.old
 
+# Gfx
+*.spv
+
 ## Standart
+
 # Prerequisites
 *.d
 

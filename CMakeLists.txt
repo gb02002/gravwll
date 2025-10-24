@@ -6,6 +6,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${gravwll_root}/bin)
 project(gravwll)
 
 include(${gravwll_root}/cmake/options.cmake)
+include(${gravwll_root}/cmake/dependencies.cmake)
 
 if(ENABLE_TESTS)
   enable_testing()

@@ -15,7 +15,7 @@ void Simulation::initialization() {
   PE.Init();
   if (!ctx.gfx().headless) {
     std::cout << "Gfx init called\n";
-    gfx.Init();
+    gfx.init();
   }
   return;
 };
@@ -25,6 +25,6 @@ void Simulation::run() {
   ctx.state().set_state(STATE::RUN);
 
   if (!ctx.gfx().headless)
-    gfx.Run();
+    gfx.run();
   return;
 };

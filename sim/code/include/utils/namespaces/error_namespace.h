@@ -38,10 +38,12 @@ constexpr void debug_assert(
 }
 
 template <typename... Args>
-constexpr void debug_print(std::format_string<Args...> fmt, Args &&...args) {
+inline constexpr void debug_print(std::format_string<Args...> fmt,
+                                  Args &&...args) {
   if constexpr (CURRENT_MODULE_DEBUG) {
     std::cout << "[DEBUG] " << std::format(fmt, std::forward<Args>(args)...)
-              << "\n";
+              << std::endl;
+    // << "\n";
   }
 }
 

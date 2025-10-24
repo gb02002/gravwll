@@ -15,6 +15,8 @@ struct GfxCtx {
   bool headless = false;
   bool verbose = false;
 
+  enum class GfxBackend { OpenGL, Vulkan };
+  GfxBackend const backend = GfxCtx::GfxBackend::Vulkan;
   // Только то, что нужно графике
   static GfxCtx from_config(const SimulationConfig &config) {
     return GfxCtx{.desired_fps = config.kFpsDesired,
