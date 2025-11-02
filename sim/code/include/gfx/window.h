@@ -24,6 +24,7 @@ struct MyWindow {
   create_surface(vk::raii::Instance &vk_instance);
   error::Result<bool> show_window();
 
+  int handle_events();
   // std::vector<const char *> get_extensions();
 };
 } // namespace window

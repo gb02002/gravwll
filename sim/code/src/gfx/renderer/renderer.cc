@@ -2,8 +2,12 @@
 #include "gfx/vulkan_core.h"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
+#include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
+#include <tuple>
+#include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
 
 namespace render {
@@ -11,8 +15,22 @@ error::Result<bool> Renderer::begin_frame(const vulkan_core::Frame &fr) {
   auto _ = primitives.device.waitForFences(*fr.fence, VK_TRUE, UINT64_MAX);
   primitives.device.resetFences(*fr.fence);
 
-  auto [acquireResult, imageIndex] = primitives.swapchain.acquireNextImage(
+  vk::Result result;
+  uint32_t imageIndex;
+  std::tie(result, imageIndex) = primitives.swapchain.acquireNextImage(
       UINT64_MAX, *fr.imageAvailableSemaphore, nullptr);
+  if (result == vk::Result::eErrorOutOfDateKHR) {
+    // swapchain устарел — нужно пересоздать swapchain (RecreateSwapchain)
+    return error::Result<bool>::error(1, "Swapchain out of date");
+  } else if (result == vk::Result::eTimeout) {
+    return error::Result<bool>::error(1, "We got timeout");
+
+  } else if (result != vk::Result::eSuccess &&
+             result != vk::Result::eSuboptimalKHR) {
+    return error::Result<bool>::error(1, "Failed to acquire swapchain image");
+  }
+  assert(result == vk::Result::eSuccess);
+  assert(imageIndex < primitives.swapchainImages.size());
   primitives.currentSwapchainImageIndex = imageIndex;
   return error::Result<bool>::success(true);
 }
@@ -108,37 +126,22 @@ Renderer::Renderer(window::MyWindow &window)
 }
 
 error::Result<bool> Renderer::render() {
-  std::cout << "We are in Renderer::render, ready to aquire frame"
-            << primitives.frameIndex << std::endl;
   auto const &frame(primitives.frames[primitives.frameIndex]);
 
-  std::cout << "Step1" << std::endl;
   auto frame_start = begin_frame(frame);
+  if (frame_start.is_error()) {
+    debug::debug_print("begin_frame got {}", frame_start.err_msg);
+    error::Result<bool>::error(-1, "Can't begin frame");
+  }
 
-  std::cout << "Step2" << std::endl;
   RecordCommandBuffer(
       frame.commandBuffer,
       primitives.swapchainImages[primitives.currentSwapchainImageIndex]);
 
-  std::cout << "Step3" << std::endl;
   SubmitCommandBuffer(frame);
-  std::cout << "Step4" << std::endl;
+  EndFrame(frame);
   // return error::Result<bool>::error(1, "");
   return error::Result<bool>::success(true);
-}
-
-int Renderer::handle_events() {
-  for (SDL_Event event; SDL_PollEvent(&event);)
-    switch (event.type) {
-    case SDL_EVENT_QUIT:
-      return 1;
-      // case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-      // RecreateSwapchain();
-      break;
-    default:
-      break;
-    }
-  return 0;
 }
 
 } // namespace render

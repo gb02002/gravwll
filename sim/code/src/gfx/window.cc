@@ -7,6 +7,7 @@
 #include "gravwll/third_party/sdl3/src/video/khronos/vulkan/vulkan_core.h"
 #include "utils/namespaces/error_namespace.h"
 #include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_scancode.h>
 #include <string>
 #include <utility>
 #include <vulkan/vulkan_raii.hpp>
@@ -70,4 +71,18 @@ error::Result<bool> window::MyWindow::show_window() {
   }
   return error::Result<bool>::success(success);
 }
+
+int MyWindow::handle_events() {
+  for (SDL_Event event; SDL_PollEvent(&event);)
+    switch (event.key.scancode) {
+    case SDL_SCANCODE_ESCAPE: {
+      std::cout << "We got SDL_EVENT_QUIT" << std::endl;
+      return 1;
+    }
+    default:
+      break;
+    }
+  return 0;
+}
+
 } // namespace window

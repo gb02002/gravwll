@@ -177,7 +177,7 @@ error::Result<bool> init_swapchain(VulkanCore &core, window::MyWindow &window) {
   core.swapchainImageFormat = chosenFormat.format;
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
   for (auto &pm : presentModes) {
-    if (pm == vk::PresentModeKHR::eMailbox) {
+    if (pm == vk::PresentModeKHR::eFifo) {
       presentMode = pm;
       break;
     }
@@ -245,32 +245,35 @@ bool check_validation_layer_support() {
   return true;
 }
 
-SwapChainSupportDetails query_swapchain_support(VulkanCore &core) {
-  SwapChainSupportDetails details;
-
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*core.physicalDevice, *core.surface,
-                                            &details.capabilities);
-  uint32_t format_count;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(*core.physicalDevice, *core.surface,
-                                       &format_count, nullptr);
-
-  if (format_count != 0) {
-    details.formats.resize(format_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(*core.physicalDevice, *core.surface,
-                                         &format_count, details.formats.data());
-  }
-
-  uint32_t present_mode_count;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(*core.physicalDevice, *core.surface,
-                                            &present_mode_count, nullptr);
-
-  if (present_mode_count != 0) {
-    details.presentModes.resize(present_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-        *core.physicalDevice, *core.surface, &present_mode_count,
-        details.presentModes.data());
-  }
-  return details;
-}
+// SwapChainSupportDetails query_swapchain_support(VulkanCore &core) {
+//   SwapChainSupportDetails details;
+//
+//   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*core.physicalDevice,
+//   *core.surface,
+//                                             &details.capabilities);
+//   uint32_t format_count;
+//   vkGetPhysicalDeviceSurfaceFormatsKHR(*core.physicalDevice, *core.surface,
+//                                        &format_count, nullptr);
+//
+//   if (format_count != 0) {
+//     details.formats.resize(format_count);
+//     vkGetPhysicalDeviceSurfaceFormatsKHR(*core.physicalDevice, *core.surface,
+//                                          &format_count,
+//                                          details.formats.data());
+//   }
+//
+//   uint32_t present_mode_count;
+//   vkGetPhysicalDeviceSurfacePresentModesKHR(*core.physicalDevice,
+//   *core.surface,
+//                                             &present_mode_count, nullptr);
+//
+//   if (present_mode_count != 0) {
+//     details.presentModes.resize(present_mode_count);
+//     vkGetPhysicalDeviceSurfacePresentModesKHR(
+//         *core.physicalDevice, *core.surface, &present_mode_count,
+//         details.presentModes.data());
+//   }
+//   return details;
+// }
 
 } // namespace vulkan_core

@@ -14,6 +14,5 @@ class Renderer {
 public:
   Renderer(window::MyWindow &window);
   error::Result<bool> render();
-  int handle_events();
 };
 }; // namespace render
