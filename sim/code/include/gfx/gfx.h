@@ -2,7 +2,8 @@
 #include "ctx/ctx.h"
 #include "ctx/simulation_state.h"
 #include "ds/tree/octree.h"
-#include "gfx/camera.h"
+#include "gfx/renderer/renderer.h"
+#include <optional>
 
 class GfxEngine {
 public:
@@ -17,17 +18,9 @@ private:
   GfxCtx &g_ctx;            // gfx context
   SimulationState &s_state; // shared state
   AROctree &tree;
-  std::unique_ptr<MyCamera3D> Cam;
-  std::unique_ptr<MyCamera3D> InitRenderer();
 
-  void CheckKeys();
-  void UpdateCameraManual(float rotationSpeedDegrees);
-  void UpdateCameraRotation(float rotationSpeedDegrees);
-  void UpdateCameraPosition(float moveSpeed);
-  void UpdateCameraVerticalMovement(float moveSpeed);
-
-  void StartRenderTree();
-  void RenderNode(AROctreeNode *node);
+  window::MyWindow window;
+  std::optional<render::Renderer> render{};
   void init_vulkan1();
   void init_vulkan();
 };

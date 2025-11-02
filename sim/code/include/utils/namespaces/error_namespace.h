@@ -107,6 +107,7 @@ namespace error {
 template <typename T>
 concept PODType = std::is_trivial_v<T> && std::is_standard_layout_v<T>;
 
+// Result union type
 template <typename T>
   requires PODType<T>
 struct Result {
@@ -148,6 +149,7 @@ struct Result {
   constexpr T value_or(T fallback) const { return is_ok() ? value : fallback; }
 };
 
+// Complex result type
 template <typename T> class CResult {
   static_assert(!std::is_trivial_v<T>, "use Result for trivial types");
 

@@ -23,12 +23,12 @@ else()
 endif()
 
 # RAYLIB
-find_package(raylib REQUIRED)
-if(raylib_FOUND)
-  message(STATUS "raylib найден")
-else()
-  message(FATAL_ERROR "raylib не найден!")
-endif()
+# find_package(raylib REQUIRED)
+# if(raylib_FOUND)
+#   message(STATUS "raylib найден")
+# else()
+#   message(FATAL_ERROR "raylib не найден!")
+# endif()
 
 # VK-BOOTSTRAP
 if(EXISTS ${THIRD_PARTY_DIR}/vk-bootstrap/CMakeLists.txt)

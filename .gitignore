@@ -18,6 +18,7 @@ benchmarks/**/*.data.old
 
 # Gfx
 *.spv
+vk_layer_settings.txt
 
 ## Standart
 
