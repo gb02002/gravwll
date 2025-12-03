@@ -1,7 +1,8 @@
 #version 450
 
-layout(location = 0) in dvec3 inPosition; // твои координаты
-layout(location = 1) in float inMass; // масса
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in float inMass;
+
 layout(location = 0) out float outMass;
 
 layout(set = 0, binding = 0) uniform UBO {

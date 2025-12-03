@@ -3,7 +3,6 @@
 #include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
 #include "engine/pairwise.h"
-#include "utils/namespaces/error_namespace.h"
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -61,10 +60,11 @@ int countPoints(AROctreeNode *node) {
 int PhysicsEngine::physicsTick(
     std::chrono::high_resolution_clock::time_point tickTime) {
   // Получаем корневой узел дерева
-  debug::debug_print("We tick!");
+  // debug::debug_print("We tick!");
   AROctreeNode *root = tree->get_root();
-  calcBlocskAx(*root->localBlock);
-  updateCoords(*root->localBlock, p_ctx.integration_step);
+  // std::cout << "We tick!" << root->localBlock->getParticle(0) << "\n";
+  // calcBlocskAx(*root->localBlock);
+  // updateCoords(*root->localBlock, p_ctx.integration_step);
   return 0;
 }
 
@@ -78,13 +78,13 @@ PhysicsEngine::PhysicsEngine(PhysicsCtx &p_ctx, SimulationState &state,
 };
 
 void PhysicsEngine::Init() {
-  InitThreads();
+  // init_threads();
 
   std::thread PEthread(&PhysicsEngine::MainCycle, this);
   PEthread.detach();
 }
 
-void PhysicsEngine::InitThreads() {
+void PhysicsEngine::init_threads() {
   for (int i = 0; i < std::thread::hardware_concurrency() - 1; ++i)
     threads.push_back(std::thread());
 };

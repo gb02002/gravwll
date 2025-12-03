@@ -11,6 +11,9 @@
 #include <vulkan/vulkan_core.h>
 
 namespace render {
+
+// acquireNextImage gets written to currentSwapchainImageIndex with error
+// handling and awaiting fences
 error::Result<bool> Renderer::begin_frame(const vulkan_core::Frame &fr) {
   auto _ = primitives.device.waitForFences(*fr.fence, VK_TRUE, UINT64_MAX);
   primitives.device.resetFences(*fr.fence);
@@ -21,13 +24,13 @@ error::Result<bool> Renderer::begin_frame(const vulkan_core::Frame &fr) {
       UINT64_MAX, *fr.imageAvailableSemaphore, nullptr);
   if (result == vk::Result::eErrorOutOfDateKHR) {
     // swapchain устарел — нужно пересоздать swapchain (RecreateSwapchain)
-    return error::Result<bool>::error(1, "Swapchain out of date");
+    return error::Result<bool>::error(-1, "Swapchain out of date");
   } else if (result == vk::Result::eTimeout) {
-    return error::Result<bool>::error(1, "We got timeout");
+    return error::Result<bool>::error(-1, "We got timeout");
 
   } else if (result != vk::Result::eSuccess &&
              result != vk::Result::eSuboptimalKHR) {
-    return error::Result<bool>::error(1, "Failed to acquire swapchain image");
+    return error::Result<bool>::error(-1, "Failed to acquire swapchain image");
   }
   assert(result == vk::Result::eSuccess);
   assert(imageIndex < primitives.swapchainImages.size());
@@ -62,10 +65,10 @@ static void RecordCommandBuffer(vk::raii::CommandBuffer const &commandBuffer,
   beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
   commandBuffer.begin(beginInfo);
 
-  auto const t{static_cast<double>(SDL_GetTicks()) * 0.001};
+  auto const t{static_cast<double>(SDL_GetTicks()) * 0.003};
 
   vk::ClearColorValue const color{std::array{
-      static_cast<float>(std::sin(t * 5.0) * 0.5 + 0.5), 0.0f, 0.0f, 1.0f}};
+      static_cast<float>(std::sin(t * 5.0) * 0.5 + 0.5), 0.66f, 1.22f, 1.18f}};
   TransitionImageLayout(commandBuffer, swapchainImage,
                         vulkan_core::ImageLayout{
                             vk::ImageLayout::eUndefined,
@@ -123,6 +126,8 @@ Renderer::Renderer(window::MyWindow &window)
   std::cout << "Renderer is inited!" << std::endl;
   vulkan_core::init_swapchain(primitives, window);
   vulkan_core::init_frames(primitives);
+  auto _0 = vulkan_core::create_render_pass(primitives);
+  auto _1 = vulkan_core::create_graphics_pipeline(primitives);
 }
 
 error::Result<bool> Renderer::render() {

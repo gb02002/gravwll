@@ -1,6 +1,7 @@
 #pragma once
 #include "gfx/window.h"
 #include "utils/namespaces/error_namespace.h"
+#include "vulkan/vulkan.hpp"
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -43,7 +44,7 @@ error::CResult<vk::raii::SwapchainKHR> get_swapchain();
 
 error::CResult<vk::raii::CommandPool> get_command_pool();
 
-constexpr uint32_t IN_FLIGHT_FRAME_COUNT{2};
+constexpr uint32_t IN_FLIGHT_FRAME_COUNT{3};
 
 struct Frame {
   vk::raii::CommandBuffer commandBuffer{nullptr};
@@ -64,6 +65,8 @@ struct VulkanCore {
   vk::raii::CommandPool commandPool{nullptr};
   std::array<Frame, IN_FLIGHT_FRAME_COUNT> frames{}; // Not inited
 
+  VkPipeline gfx_pipeline;
+  vk::RenderPass render_pass;
   vk::raii::SwapchainKHR swapchain{nullptr}; // Not inited
   std::vector<vk::Image> swapchainImages{};  // Not inited
   vk::Extent2D swapchainExtent{};            // Not inited
@@ -77,5 +80,9 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
 void init_frames(VulkanCore &core);
 error::Result<bool> init_swapchain(VulkanCore &core, window::MyWindow &window);
 SwapChainSupportDetails query_swapchain_support(VulkanCore &core);
+error::Result<bool> create_graphics_pipeline(VulkanCore &);
+error::Result<bool> create_render_pass(VulkanCore &);
+
+static std::vector<char> load_shader(const std::string &filename);
 
 }; // namespace vulkan_core

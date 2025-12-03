@@ -45,6 +45,24 @@ public:
     DataBlock() noexcept = default;
     DataBlock(DataBlock &&other) noexcept = default;
     DataBlock &operator=(DataBlock &&other) noexcept = default;
+#define DEFINE_GETTER(field)                                                   \
+  const std::array<double, N> &get_##field() const { return field; }           \
+  std::array<double, N> &get_##field() { return field; }
+    DEFINE_GETTER(x)
+    DEFINE_GETTER(y)
+    DEFINE_GETTER(z)
+    DEFINE_GETTER(vx)
+    DEFINE_GETTER(vy)
+    DEFINE_GETTER(vz)
+    DEFINE_GETTER(fx)
+    DEFINE_GETTER(fy)
+    DEFINE_GETTER(fz)
+    DEFINE_GETTER(ax)
+    DEFINE_GETTER(ay)
+    DEFINE_GETTER(az)
+    DEFINE_GETTER(mass)
+
+#undef DEFINE_GETTER
   };
 
   struct MetaBlock {
@@ -85,13 +103,6 @@ public:
   DEFINE_GETTER(mass)
 
 #undef DEFINE_GETTER
-  // #undef DEFINE_GETTER
-  // #define DEFINE_GETTER(field) \
-  //   const std::array<double, N> &get_##field() const { return
-  //   data_block.field; } std::array<double, N> &get_##field() { return
-  //   data_block.field(); }
-  //
-  // #undef DEFINE_GETTER
 
   int size() const { return data_block.size; }
   bool is_full() const { return data_block.size >= N; }

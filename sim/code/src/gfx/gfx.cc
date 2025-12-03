@@ -28,11 +28,9 @@ void GfxEngine::run() {
   while (s_state.is_running()) {
     total_frames++;
 
-    // --- Обработка событий ---
     if (window.handle_events())
       s_state.request_exit();
 
-    // --- Рендер ---
     render->render();
   }
 

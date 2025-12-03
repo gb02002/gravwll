@@ -20,6 +20,9 @@ benchmarks/**/*.data.old
 *.spv
 vk_layer_settings.txt
 
+# Datasets
+assets/datasets/*
+
 ## Standart
 
 # Prerequisites

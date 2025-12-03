@@ -41,5 +41,5 @@ private:
   CloseInteractionElement closeInteraction;
   MultipoleInteractionElement multipoleInteraction;
 
-  void InitThreads();
+  void init_threads();
 };

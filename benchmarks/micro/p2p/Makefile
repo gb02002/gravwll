@@ -3,7 +3,6 @@ CXXFLAGS = -std=c++20 -g -O3 -ffast-math -march=native -mfpmath=sse -I. \
            -I../../../sim/code/include \
 					 ../../../sim/code/src/ds/storage/particleBlock.cc \
            -Wall -Wextra -Wno-unused-parameter
-
 LDFLAGS = -lpthread
 
 BENCH_LIB = /usr/lib/libbenchmark.so
