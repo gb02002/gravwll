@@ -1,25 +1,15 @@
 #pragma once
+#include "core/bodies/particles.h"
 #include "gfx/window.h"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_raii.hpp>
 
-const std::vector<const char *> validation_layers = {
-    "VK_LAYER_KHRONOS_validation"};
-
-#ifdef NDEBUG
-const bool enableValidationLayers = true;
-#else
-const bool enableValidationLayers = true;
-
-#endif // NDEBUG
-
 namespace vulkan_core {
-
-bool check_validation_layer_support();
 
 struct ImageLayout {
   vk::ImageLayout imageLayout{};
@@ -34,15 +24,15 @@ struct SwapChainSupportDetails {
   std::vector<VkPresentModeKHR> presentModes;
 };
 
-error::CResult<vk::raii::Device> get_device();
-error::CResult<vk::raii::Instance> get_instance(const char *name);
-error::CResult<vk::raii::SurfaceKHR> get_surface();
-error::CResult<vk::raii::PhysicalDevices> get_physical_device();
-error::Result<uint32_t> get_queue_famity_index();
-error::CResult<vk::raii::Queue> get_queue();
-error::CResult<vk::raii::SwapchainKHR> get_swapchain();
+// error::CResult<vk::raii::Device> get_device();
+// error::CResult<vk::raii::Instance> get_instance(const char *name);
+// error::CResult<vk::raii::SurfaceKHR> get_surface();
+// error::CResult<vk::raii::PhysicalDevices> get_physical_device();
+// error::Result<uint32_t> get_queue_famity_index();
+// error::CResult<vk::raii::Queue> get_queue();
+// error::CResult<vk::raii::SwapchainKHR> get_swapchain();
 
-error::CResult<vk::raii::CommandPool> get_command_pool();
+// error::CResult<vk::raii::CommandPool> get_command_pool();
 
 constexpr uint32_t IN_FLIGHT_FRAME_COUNT{3};
 
@@ -51,6 +41,10 @@ struct Frame {
   vk::raii::Semaphore imageAvailableSemaphore{nullptr};
   vk::raii::Semaphore renderFinishedSemaphore{nullptr};
   vk::raii::Fence fence{nullptr};
+
+  vk::raii::Buffer uniform_buffer{nullptr};
+  vk::raii::DeviceMemory uniform_buffer_memory{nullptr};
+  void *uniform_buffer_mapped{nullptr};
 };
 
 struct VulkanCore {
@@ -65,24 +59,50 @@ struct VulkanCore {
   vk::raii::CommandPool commandPool{nullptr};
   std::array<Frame, IN_FLIGHT_FRAME_COUNT> frames{}; // Not inited
 
-  VkPipeline gfx_pipeline;
-  vk::RenderPass render_pass;
+  vk::raii::Pipeline gfx_pipeline{nullptr};
+  vk::raii::RenderPass render_pass{nullptr};
+
+  // Uniform buffersn
+  vk::raii::DescriptorSetLayout descriptor_set_layout{nullptr};
+  vk::raii::PipelineLayout pipeline_layout{nullptr};
+
   vk::raii::SwapchainKHR swapchain{nullptr}; // Not inited
   std::vector<vk::Image> swapchainImages{};  // Not inited
   vk::Extent2D swapchainExtent{};            // Not inited
   vk::Format swapchainImageFormat{vk::Format::eB8G8R8A8Srgb};
   uint32_t currentSwapchainImageIndex{}; // Not inited
   uint32_t frameIndex{0};
+
+  std::vector<vk::raii::CommandBuffer> command_buffers;
+
+  std::vector<vk::raii::ImageView> swapchain_image_views{};
+  std::vector<vk::raii::Framebuffer> swapchain_frame_buffers{};
+
+  vk::raii::Buffer vertex_buffer{nullptr};
+  vk::raii::DeviceMemory vertex_buffer_memory{nullptr};
+  size_t particle_count{0};
+
+  vk::raii::DescriptorPool descriptor_pool{nullptr};
 };
 
+void create_vertex_buffer(VulkanCore &core,
+                          const std::vector<Particle> &partices);
 error::CResult<VulkanCore> create_vulkan_core(const char *appName,
                                               window::MyWindow &window);
 void init_frames(VulkanCore &core);
 error::Result<bool> init_swapchain(VulkanCore &core, window::MyWindow &window);
 SwapChainSupportDetails query_swapchain_support(VulkanCore &core);
+
 error::Result<bool> create_graphics_pipeline(VulkanCore &);
 error::Result<bool> create_render_pass(VulkanCore &);
 
+error::Result<bool> record_command_buffers(VulkanCore &core);
+error::Result<bool> create_command_buffers(VulkanCore &core);
+error::Result<bool> create_image_views(VulkanCore &core);
+error::Result<bool> create_framebuffers(VulkanCore &core);
+
+void create_descriptor_pool_and_sets(VulkanCore &core);
+void create_uniform_buffers(VulkanCore &core);
 static std::vector<char> load_shader(const std::string &filename);
 
 }; // namespace vulkan_core

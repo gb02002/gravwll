@@ -28,19 +28,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/code/include/ctx/config.h.in
 target_include_directories(simulation PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/code/include
 )
-add_executable(simulation_bin
-  ${gravwll_source_code_dir}/main.cc
-  ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
-  ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-  ${IMGUI_DIR}/imgui.cpp
-  ${IMGUI_DIR}/imgui_draw.cpp
-  ${IMGUI_DIR}/imgui_demo.cpp
-  ${IMGUI_DIR}/imgui_tables.cpp
-  ${IMGUI_DIR}/imgui_widgets.cpp
-)
+add_executable(simulation_bin ${gravwll_source_code_dir}/main.cc)
 
 target_include_directories(simulation_bin PRIVATE
 ${gravwll_source_code_dir}/include)
 target_link_libraries(simulation_bin PRIVATE gravwll::simulation)
-target_link_libraries(simulation_bin PRIVATE gravwll::simulation raylib gravwll_vulkan_dependencies)
+target_link_libraries(
+  simulation_bin PRIVATE
+  gravwll::simulation gravwll_vulkan_dependencies
+)
 target_include_directories(simulation_bin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

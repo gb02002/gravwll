@@ -1,6 +1,8 @@
-#version 450
+#version 460
+#extension GL_EXT_buffer_reference : require
 
 layout(location = 0) in float inMass;
+
 layout(location = 0) out vec4 outColor;
 
 void main() {

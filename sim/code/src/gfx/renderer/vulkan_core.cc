@@ -10,6 +10,7 @@
 #include <cstring>
 #include <fstream>
 #include <ios>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -19,7 +20,42 @@
 #include <vulkan/vulkan_wayland.h>
 // #include <vulkan/vulkan_xlib.h>
 
+const std::vector<const char *> validation_layers = {
+    "VK_LAYER_KHRONOS_validation"};
+
+#ifdef NDEBUG
+const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+
+#endif // NDEBUG
+
 namespace vulkan_core {
+bool check_validation_layer_support() {
+  uint32_t layerCount;
+  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+  std::vector<VkLayerProperties> availableLayers(layerCount);
+  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+  for (const char *layerName : validation_layers) {
+    bool layerFound = false;
+
+    for (const auto &layerProperties : availableLayers) {
+      if (strcmp(layerName, layerProperties.layerName) == 0) {
+        layerFound = true;
+        break;
+      }
+    }
+
+    if (!layerFound) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 struct Vertex {
   float x;
   float y;
@@ -36,10 +72,9 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
       return error::CResult<VulkanCore>::error(
           1, "Validation layers are not available");
     } else {
-      debug::debug_print("Validation layers acquired");
+      std::cout << "Validation layers acquired" << std::endl;
     }
 
-    // 0. Flags
     uint32_t ext_q = 0;
     const char *const *res = SDL_Vulkan_GetInstanceExtensions(&ext_q);
     if (!res || ext_q == 0) {
@@ -47,14 +82,11 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
           "SDL_Vulkan_GetInstanceExtensions failed or returned 0 extensions");
     }
 
-    // скопировать в std::vector (удобнее добавлять свои)
     std::vector<const char *> extensions(res, res + ext_q);
 
-    // получить текущий видеодрайвер
     const char *video_driver = SDL_GetCurrentVideoDriver();
     debug::debug_print("Current video driver: {}", video_driver);
 
-    // добавить нужный surface-extension
     if (strcmp(video_driver, "wayland") == 0) {
       extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
       //   vulkan_xlib naming is corrupted
@@ -69,7 +101,6 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
           video_driver);
     }
 
-    // выводим, что получилось
     for (auto e : extensions) {
       debug::debug_print("Using extension: {}", e);
     }
@@ -232,265 +263,212 @@ error::Result<bool> init_swapchain(VulkanCore &core, window::MyWindow &window) {
   return error::Result<bool>::success(true);
 }
 
-bool check_validation_layer_support() {
-  uint32_t layerCount;
-  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-  std::vector<VkLayerProperties> availableLayers(layerCount);
-  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-  for (const char *layerName : validation_layers) {
-    bool layerFound = false;
-
-    for (const auto &layerProperties : availableLayers) {
-      if (strcmp(layerName, layerProperties.layerName) == 0) {
-        layerFound = true;
-        break;
-      }
-    }
-
-    if (!layerFound) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-VkShaderModule create_shader_model(VulkanCore &core,
-                                   const std::vector<char> &code) {
-  VkShaderModuleCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  create_info.codeSize = code.size();
-  create_info.pCode = reinterpret_cast<const uint32_t *>(code.data());
-  VkShaderModule shader_module;
-  if (vkCreateShaderModule(*core.device, &create_info, nullptr,
-                           &shader_module) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create VkShaderModule");
-  }
-  return shader_module;
-}
-
 error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
-  auto vert_shader = load_shader("../assets/shaders/vertex.spv");
-  VkShaderModule vert_shader_module = create_shader_model(core, vert_shader);
+  debug::debug_print("Starting pipeline creation...");
+  if (!*core.render_pass) {
+    auto result = create_render_pass(core);
+    if (result.is_error())
+      return result;
+  }
 
-  VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
-  vert_shader_stage_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vert_shader_stage_info.module = vert_shader_module;
-  vert_shader_stage_info.pName = "main";
+  debug::debug_print("Render pass created");
+  try {
+    auto vertShader = load_shader("../assets/shaders/vertex.spv");
+    auto fragShader = load_shader("../assets/shaders/fragment.spv");
 
-  auto frag_shader = load_shader("../assets/shaders/fragment.spv");
-  VkShaderModule frag_shader_module = create_shader_model(core, frag_shader);
+    vk::ShaderModuleCreateInfo vertShaderInfo{};
+    vertShaderInfo.codeSize = vertShader.size();
+    vertShaderInfo.pCode =
+        reinterpret_cast<const uint32_t *>(vertShader.data());
 
-  VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
-  frag_shader_stage_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  frag_shader_stage_info.module = frag_shader_module;
-  frag_shader_stage_info.pName = "main";
+    vk::ShaderModuleCreateInfo fragShaderInfo{};
+    fragShaderInfo.codeSize = fragShader.size();
+    fragShaderInfo.pCode =
+        reinterpret_cast<const uint32_t *>(fragShader.data());
 
-  VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info,
-                                                     frag_shader_stage_info};
+    vk::raii::ShaderModule vertShaderModule(core.device, vertShaderInfo);
+    vk::raii::ShaderModule fragShaderModule(core.device, fragShaderInfo);
 
-  // Dynamic Parameters for Pipeline
-  std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT,
-                                               VK_DYNAMIC_STATE_SCISSOR};
+    vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.setPNext(nullptr);
+    vertShaderStageInfo.flags = vk::PipelineShaderStageCreateFlags();
+    vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+    vertShaderStageInfo.module = *vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+    vertShaderStageInfo.pSpecializationInfo = nullptr;
 
-  VkPipelineDynamicStateCreateInfo dynamicState{};
-  dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-  dynamicState.pDynamicStates = dynamicStates.data();
+    vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.setPNext(nullptr);
+    fragShaderStageInfo.flags = vk::PipelineShaderStageCreateFlags();
+    fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+    fragShaderStageInfo.module = *fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+    fragShaderStageInfo.pSpecializationInfo = nullptr;
 
-  VkVertexInputBindingDescription binding_description{};
-  binding_description.binding = 0;
-  binding_description.stride = sizeof(Vertex);
-  binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    vk::PipelineShaderStageCreateInfo shader_stages[] = {vertShaderStageInfo,
+                                                         fragShaderStageInfo};
+    std::vector<vk::DynamicState> dynamic_states = {vk::DynamicState::eViewport,
+                                                    vk::DynamicState::eScissor};
 
-  VkVertexInputAttributeDescription attr_pos{};
-  attr_pos.binding = 0;
-  attr_pos.location = 0;
-  attr_pos.format = VK_FORMAT_R32G32B32_SFLOAT;
-  attr_pos.offset = offsetof(Vertex, x);
+    vk::PipelineDynamicStateCreateInfo dynamic_state{};
+    dynamic_state.dynamicStateCount =
+        static_cast<uint32_t>(dynamic_states.size());
+    dynamic_state.pDynamicStates = dynamic_states.data();
 
-  VkVertexInputAttributeDescription attr_mass{};
-  attr_mass.binding = 0;
-  attr_mass.location = 1;
-  attr_mass.format = VK_FORMAT_R32_SFLOAT;
-  attr_mass.offset = offsetof(Vertex, mass);
+    vk::VertexInputBindingDescription binding_description{};
+    binding_description.binding = 0;
+    binding_description.stride = sizeof(Vertex);
+    binding_description.inputRate = vk::VertexInputRate::eVertex;
 
-  std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {
-      attr_pos, attr_mass};
+    vk::VertexInputAttributeDescription attr_pos{};
+    attr_pos.binding = 0;
+    attr_pos.location = 0;
+    attr_pos.format = vk::Format::eR32G32B32Sfloat;
+    attr_pos.offset = offsetof(Vertex, x);
 
-  VkPipelineVertexInputStateCreateInfo vertex_input_info{};
-  vertex_input_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_info.vertexBindingDescriptionCount = 1;
-  vertex_input_info.pVertexBindingDescriptions = &binding_description;
-  vertex_input_info.vertexAttributeDescriptionCount =
-      attribute_descriptions.size();
-  vertex_input_info.pVertexAttributeDescriptions =
-      attribute_descriptions.data();
+    vk::VertexInputAttributeDescription attr_mass{};
+    attr_mass.binding = 0;
+    attr_mass.location = 1;
+    attr_mass.format = vk::Format::eR32Sfloat;
+    attr_mass.offset = offsetof(Vertex, mass);
 
-  VkPipelineInputAssemblyStateCreateInfo input_assembly{};
-  input_assembly.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-  input_assembly.primitiveRestartEnable = VK_FALSE;
+    std::array<vk::VertexInputAttributeDescription, 2> attribute_descriptions =
+        {attr_mass, attr_mass};
 
-  VkViewport viewport{};
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = (float)core.swapchainExtent.width;
-  viewport.height = (float)core.swapchainExtent.height;
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
+    vk::PipelineVertexInputStateCreateInfo vertex_input_info{};
+    vertex_input_info.vertexBindingDescriptionCount = 1;
+    vertex_input_info.pVertexBindingDescriptions = &binding_description;
+    vertex_input_info.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(attribute_descriptions.size());
+    vertex_input_info.pVertexAttributeDescriptions =
+        attribute_descriptions.data();
 
-  VkRect2D scissor{};
-  scissor.offset = {0, 0};
-  scissor.extent = core.swapchainExtent;
+    vk::PipelineInputAssemblyStateCreateInfo input_assembly{};
+    input_assembly.topology = vk::PrimitiveTopology::ePointList;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
 
-  VkPipelineViewportStateCreateInfo viewport_state{};
-  viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewport_state.viewportCount = 1;
-  viewport_state.pViewports = &viewport;
-  viewport_state.scissorCount = 1;
-  viewport_state.pScissors = &scissor;
+    vk::Viewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(core.swapchainExtent.width);
+    viewport.height = static_cast<float>(core.swapchainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
 
-  VkPipelineRasterizationStateCreateInfo rasterizer{};
-  rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  rasterizer.depthClampEnable = VK_FALSE;
-  rasterizer.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer.polygonMode = VK_POLYGON_MODE_POINT;
-  rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-  rasterizer.depthBiasEnable = VK_FALSE;
-  rasterizer.depthBiasConstantFactor = 0.0f;
-  rasterizer.depthBiasClamp = 0.0f;
-  rasterizer.depthBiasSlopeFactor = 0.0f;
+    vk::Rect2D scissor{};
+    scissor.offset = vk::Offset2D{0, 0};
+    scissor.extent = core.swapchainExtent;
 
-  // Multisampling
-  VkPipelineMultisampleStateCreateInfo multisampling{};
-  multisampling.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  multisampling.sampleShadingEnable = VK_FALSE;
-  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-  multisampling.minSampleShading = 1.0f;
-  multisampling.pSampleMask = nullptr;
-  multisampling.alphaToCoverageEnable = VK_FALSE;
-  multisampling.alphaToOneEnable = VK_FALSE;
+    vk::PipelineViewportStateCreateInfo viewport_state{};
+    viewport_state.viewportCount = 1;
+    viewport_state.pViewports = &viewport;
+    viewport_state.scissorCount = 1;
+    viewport_state.pScissors = &scissor;
 
-  // Colorblending. I think just for particles we don't need it
-  VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-  colorBlendAttachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  colorBlendAttachment.blendEnable = VK_FALSE;
-  colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-  colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-  colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-  colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-  colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-  colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    vk::PipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = vk::PolygonMode::ePoint;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+    rasterizer.frontFace = vk::FrontFace::eClockwise;
+    rasterizer.depthBiasEnable = VK_FALSE;
 
-  VkPipelineColorBlendStateCreateInfo colorBlending{};
-  colorBlending.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  colorBlending.logicOpEnable = VK_FALSE;
-  colorBlending.logicOp = VK_LOGIC_OP_COPY;
-  colorBlending.attachmentCount = 1;
-  colorBlending.pAttachments = &colorBlendAttachment;
-  colorBlending.blendConstants[0] = 0.0f;
-  colorBlending.blendConstants[1] = 0.0f;
-  colorBlending.blendConstants[2] = 0.0f;
-  colorBlending.blendConstants[3] = 0.0f;
+    vk::PipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
 
-  // Descriptor Set Layout
-  VkDescriptorSetLayout descriptor_set_layout;
-  VkDescriptorSetLayoutBinding ubo_layout_binding;
-  ubo_layout_binding.binding = 0;
-  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_layout_binding.descriptorCount = 1;
-  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    vk::PipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask =
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+    color_blend_attachment.blendEnable = VK_FALSE;
 
-  VkDescriptorSetLayoutCreateInfo layout_info{};
-  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = 1;
-  layout_info.pBindings = &ubo_layout_binding;
+    vk::PipelineColorBlendStateCreateInfo color_blending{};
+    color_blending.logicOpEnable = VK_FALSE;
+    color_blending.attachmentCount = 1;
+    color_blending.pAttachments = &color_blend_attachment;
 
-  vkCreateDescriptorSetLayout(*core.device, &layout_info, nullptr,
-                              &descriptor_set_layout);
-  VkPipelineLayout pipeline_layout;
-  VkPipelineLayoutCreateInfo pipeline_layout_info{};
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &descriptor_set_layout;
-  if (vkCreatePipelineLayout(*core.device, &pipeline_layout_info, nullptr,
-                             &pipeline_layout) != VK_SUCCESS)
-    return error::Result<bool>::error(-1, "Failed to create pipeline_layout");
+    vk::DescriptorSetLayoutBinding ubo_layout_binding{};
+    ubo_layout_binding.binding = 0;
+    ubo_layout_binding.descriptorType = vk::DescriptorType::eUniformBuffer;
+    ubo_layout_binding.descriptorCount = 1;
+    ubo_layout_binding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
-  // TODO: fininsh Pipeline initialization after finishing UBO for camera matrix
-  // and RenderPass
-  VkGraphicsPipelineCreateInfo pipeline_create_info{};
-  pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipeline_create_info.stageCount = 2;
-  pipeline_create_info.pStages = shader_stages;
+    vk::DescriptorSetLayoutCreateInfo layout_info{};
+    layout_info.bindingCount = 1;
+    layout_info.pBindings = &ubo_layout_binding;
 
-  pipeline_create_info.pVertexInputState = &vertex_input_info;
-  pipeline_create_info.pInputAssemblyState = &input_assembly;
-  pipeline_create_info.pViewportState = &viewport_state;
-  pipeline_create_info.pRasterizationState = &rasterizer;
-  pipeline_create_info.pMultisampleState = &multisampling;
-  pipeline_create_info.pDepthStencilState = nullptr;
-  pipeline_create_info.pColorBlendState = &colorBlending;
-  pipeline_create_info.pDynamicState = &dynamicState;
-  pipeline_create_info.layout = pipeline_layout;
-  pipeline_create_info.renderPass = core.render_pass;
-  pipeline_create_info.subpass = 0;
+    core.descriptor_set_layout =
+        vk::raii::DescriptorSetLayout(core.device, layout_info);
 
-  if (vkCreateGraphicsPipelines(*core.device, VK_NULL_HANDLE, 1,
-                                &pipeline_create_info, nullptr,
-                                &core.gfx_pipeline) != VK_SUCCESS)
-    return error::Result<bool>::error(-1, "Failed to init gfx_pipeline");
+    vk::PipelineLayoutCreateInfo pipeline_layout_info{};
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &*core.descriptor_set_layout;
 
-  vkDestroyShaderModule(*core.device, frag_shader_module, nullptr);
-  vkDestroyShaderModule(*core.device, vert_shader_module, nullptr);
-  return error::Result<bool>::success(1);
+    core.pipeline_layout =
+        vk::raii::PipelineLayout(core.device, pipeline_layout_info);
+
+    vk::GraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shader_stages;
+    pipelineInfo.pVertexInputState = &vertex_input_info;
+    pipelineInfo.pInputAssemblyState = &input_assembly;
+    pipelineInfo.pViewportState = &viewport_state;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &color_blending;
+    pipelineInfo.pDynamicState = &dynamic_state;
+    pipelineInfo.layout = *core.pipeline_layout;
+    pipelineInfo.renderPass = *core.render_pass;
+    pipelineInfo.subpass = 0;
+
+    core.gfx_pipeline = vk::raii::Pipeline(core.device, nullptr, pipelineInfo);
+
+    debug::debug_print("Graphics pipeline created successfully");
+    return error::Result<bool>::success(true);
+  } catch (vk::SystemError &error) {
+    debug::debug_print("Error in create_graphics_pipeline: %s", error.what());
+    return error::Result<bool>::error(-1, error.what());
+  }
 }
 
 error::Result<bool> create_render_pass(VulkanCore &core) {
-  VkAttachmentDescription color_attachment{};
-  color_attachment.format = static_cast<VkFormat>(core.swapchainImageFormat);
-  color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  try {
+    vk::AttachmentDescription color_attachment{};
+    color_attachment.format = core.swapchainImageFormat;
+    color_attachment.samples = vk::SampleCountFlagBits::e1;
+    color_attachment.loadOp = vk::AttachmentLoadOp::eClear;
+    color_attachment.storeOp = vk::AttachmentStoreOp::eStore;
+    color_attachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+    color_attachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+    color_attachment.initialLayout = vk::ImageLayout::eUndefined;
+    color_attachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
-  VkAttachmentReference color_attachment_ref{};
-  color_attachment_ref.attachment = 0;
-  color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    vk::AttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
-  VkSubpassDescription subpass{};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &color_attachment_ref;
+    vk::SubpassDescription subpass{};
+    subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_attachment_ref;
 
-  VkRenderPassCreateInfo render_pass_create_info{};
-  render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_create_info.attachmentCount = 1;
-  render_pass_create_info.pAttachments = &color_attachment;
-  render_pass_create_info.subpassCount = 1;
-  render_pass_create_info.pSubpasses = &subpass;
-  if (vkCreateRenderPass(*core.device, &render_pass_create_info, nullptr,
-                         core.render_pass) != VK_SUCCESS)
-    return error::Result<bool>::error(-1, "Failed to create render_pass");
-  return error::Result<bool>::success(0);
+    vk::RenderPassCreateInfo render_pass_create_info{};
+    render_pass_create_info.attachmentCount = 1;
+    render_pass_create_info.pAttachments = &color_attachment;
+    render_pass_create_info.subpassCount = 1;
+    render_pass_create_info.pSubpasses = &subpass;
+
+    core.render_pass =
+        vk::raii::RenderPass(core.device, render_pass_create_info);
+    debug::debug_print("RenderPass created successfully");
+
+    return error::Result<bool>::success(true);
+  } catch (vk::SystemError &error) {
+    debug::debug_print("Failed to create render pass: {}", error.what());
+    return error::Result<bool>::error(-1, error.what());
+  }
 }
 
 static std::vector<char> load_shader(const std::string &filename) {
@@ -511,5 +489,196 @@ static std::vector<char> load_shader(const std::string &filename) {
   file.close();
 
   return buffer;
+}
+
+error::Result<bool> create_image_views(VulkanCore &core) {
+  try {
+    core.swapchain_image_views.reserve(core.swapchainImages.size());
+
+    for (size_t i = 0; i < core.swapchainImages.size(); i++) {
+      vk::ImageViewCreateInfo createInfo{};
+      createInfo.image = core.swapchainImages[i];
+      createInfo.viewType = vk::ImageViewType::e2D;
+      createInfo.format = core.swapchainImageFormat;
+
+      // Каналы цвета (RGBA)
+      createInfo.components.r = vk::ComponentSwizzle::eIdentity;
+      createInfo.components.g = vk::ComponentSwizzle::eIdentity;
+      createInfo.components.b = vk::ComponentSwizzle::eIdentity;
+      createInfo.components.a = vk::ComponentSwizzle::eIdentity;
+
+      // Что включаем в изображение (только цвет)
+      createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+      createInfo.subresourceRange.baseMipLevel = 0;
+      createInfo.subresourceRange.levelCount = 1;
+      createInfo.subresourceRange.baseArrayLayer = 0;
+      createInfo.subresourceRange.layerCount = 1;
+
+      core.swapchain_image_views.emplace_back(core.device, createInfo);
+    }
+
+    debug::debug_print("Created {} image views",
+                       core.swapchain_image_views.size());
+    return error::Result<bool>::success(true);
+
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to create image views: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to create image views");
+  }
+}
+
+error::Result<bool> create_framebuffers(VulkanCore &core) {
+  try {
+    core.swapchain_frame_buffers.reserve(core.swapchain_image_views.size());
+
+    for (size_t i = 0; i < core.swapchain_image_views.size(); i++) {
+      // Массив attachments (в нашем случае - один color attachment)
+      vk::ImageView attachments[] = {*core.swapchain_image_views[i]};
+
+      vk::FramebufferCreateInfo framebufferInfo{};
+      framebufferInfo.renderPass = *core.render_pass;
+      framebufferInfo.attachmentCount = 1;
+      framebufferInfo.pAttachments = attachments;
+      framebufferInfo.width = core.swapchainExtent.width;
+      framebufferInfo.height = core.swapchainExtent.height;
+      framebufferInfo.layers = 1;
+
+      core.swapchain_frame_buffers.emplace_back(core.device, framebufferInfo);
+    }
+
+    debug::debug_print("Created {} framebuffers",
+                       core.swapchain_frame_buffers.size());
+    return error::Result<bool>::success(true);
+
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to create framebuffers: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to create framebuffers");
+  }
+}
+
+error::Result<bool> create_command_buffers(VulkanCore &core) {
+  try {
+    core.command_buffers.reserve(core.swapchain_frame_buffers.size());
+
+    vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.commandPool = *core.commandPool;
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
+    allocInfo.commandBufferCount =
+        static_cast<uint32_t>(core.swapchain_frame_buffers.size());
+
+    core.command_buffers = core.device.allocateCommandBuffers(allocInfo);
+
+    debug::debug_print("Created {} command buffers for rendering",
+                       core.command_buffers.size());
+    return error::Result<bool>::success(true);
+
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to create command buffers: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to create command buffers");
+  }
+}
+
+void record_command_buffer(VulkanCore &core, vk::CommandBuffer commandBuffer,
+                           uint32_t imageIndex) {
+  // Начинаем запись
+  vk::CommandBufferBeginInfo beginInfo{};
+  beginInfo.flags =
+      vk::CommandBufferUsageFlags(); // Можно использовать eOneTimeSubmit
+
+  commandBuffer.begin(beginInfo);
+
+  // Начинаем render pass
+  vk::RenderPassBeginInfo renderPassInfo{};
+  renderPassInfo.renderPass = *core.render_pass;
+  renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
+  renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
+  renderPassInfo.renderArea.extent = core.swapchainExtent;
+
+  // Цвет очистки (черный)
+  vk::ClearValue clearColor =
+      vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+  renderPassInfo.clearValueCount = 1;
+  renderPassInfo.pClearValues = &clearColor;
+
+  commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+
+  // Привязываем пайплайн
+  commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                             *core.gfx_pipeline);
+
+  // TODO: Здесь будет привязка вершинного буфера и uniform буферов
+  // Пока просто рисуем без данных
+  commandBuffer.draw(3, 1, 0, 0); // Нарисовать 3 вершины (тест)
+
+  // Заканчиваем render pass
+  commandBuffer.endRenderPass();
+
+  // Заканчиваем запись
+  commandBuffer.end();
+}
+
+error::Result<bool> record_command_buffers(VulkanCore &core) {
+  try {
+    for (size_t i = 0; i < core.command_buffers.size(); i++) {
+      record_command_buffer(core, *core.command_buffers[i],
+                            static_cast<uint32_t>(i));
+    }
+    debug::debug_print("Recorded commands for {} command buffers",
+                       core.command_buffers.size());
+    return error::Result<bool>::success(true);
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to record command buffers: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to record command buffers");
+  }
+}
+
+void create_uniform_buffers(VulkanCore &core) {
+  for (auto &frame : core.frames) {
+    // TODO: Создать uniform буфер
+    // Выделить память
+    // Отобразить в адресное пространство CPU
+  }
+}
+
+void create_descriptor_pool_and_sets(VulkanCore &core) {
+  // 1. Создать descriptor pool
+  vk::DescriptorPoolSize poolSize{vk::DescriptorType::eUniformBuffer,
+                                  IN_FLIGHT_FRAME_COUNT};
+  vk::DescriptorPoolCreateInfo poolInfo{};
+  poolInfo.poolSizeCount = 1;
+  poolInfo.pPoolSizes = &poolSize;
+  poolInfo.maxSets = IN_FLIGHT_FRAME_COUNT;
+  core.descriptor_pool = core.device.createDescriptorPool(poolInfo);
+
+  // 2. Выделить descriptor sets для каждого кадра
+  std::vector<vk::DescriptorSetLayout> layouts(IN_FLIGHT_FRAME_COUNT,
+                                               *core.descriptor_set_layout);
+  vk::DescriptorSetAllocateInfo allocInfo{};
+  allocInfo.descriptorPool = *core.descriptor_pool;
+  allocInfo.descriptorSetCount = IN_FLIGHT_FRAME_COUNT;
+  allocInfo.pSetLayouts = layouts.data();
+
+  auto sets = core.device.allocateDescriptorSets(allocInfo);
+
+  // 3. Привязать uniform буферы к descriptor sets
+  for (size_t i = 0; i < core.frames.size(); i++) {
+    vk::DescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = *core.frames[i].uniform_buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+
+    vk::WriteDescriptorSet descriptorWrite{};
+    descriptorWrite.dstSet = *sets[i];
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+
+    core.device.updateDescriptorSets(descriptorWrite, nullptr);
+
+    // Сохранить descriptor set в Frame
+    core.frames[i].descriptorSet = std::move(sets[i]);
+  }
 }
 } // namespace vulkan_core

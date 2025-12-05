@@ -1,6 +1,8 @@
 #pragma once
+#include "core/bodies/particles.h"
 #include "gfx/vulkan_core.h"
 #include "utils/namespaces/error_namespace.h"
+#include <vector>
 
 namespace render {
 class Renderer {
@@ -10,6 +12,9 @@ class Renderer {
 
   void SubmitCommandBuffer(vulkan_core::Frame const &frame);
   void EndFrame(vulkan_core::Frame const &frame);
+  error::Result<bool> render_frame();
+
+  std::vector<Particle> particles;
 
 public:
   Renderer(window::MyWindow &window);

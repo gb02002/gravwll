@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
+#include <stdexcept>
 #include <tuple>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
@@ -109,25 +109,35 @@ void Renderer::EndFrame(vulkan_core::Frame const &frame) {
       (primitives.frameIndex + 1) % vulkan_core::IN_FLIGHT_FRAME_COUNT;
 }
 
-void Renderer::SubmitCommandBuffer(vulkan_core::Frame const &frame) {
-  vk::SubmitInfo submitInfo{};
-  submitInfo.setCommandBuffers(*frame.commandBuffer);
-  submitInfo.setWaitSemaphores(*frame.imageAvailableSemaphore);
-  submitInfo.setSignalSemaphores(*frame.renderFinishedSemaphore);
-  constexpr vk::PipelineStageFlags waitStage{
-      vk::PipelineStageFlagBits::eTransfer};
-  submitInfo.setWaitDstStageMask(waitStage);
-  primitives.graphicsQueue.submit(submitInfo, frame.fence);
-}
-
 Renderer::Renderer(window::MyWindow &window)
     : primitives(vulkan_core::create_vulkan_core(window.window_name, window)
                      .unwrap()) {
-  std::cout << "Renderer is inited!" << std::endl;
+
   vulkan_core::init_swapchain(primitives, window);
+  vulkan_core::create_image_views(primitives);
+  vulkan_core::create_render_pass(primitives);
+  vulkan_core::create_graphics_pipeline(primitives);
+  vulkan_core::create_framebuffers(primitives);
+
+  if (auto e = vulkan_core::create_command_buffers(primitives); e.is_error()) {
+    throw std::runtime_error(e.err_msg);
+  }
+
+  // TODO: Создать вершинные буферы здесь
+  vulkan_core::create_vertex_buffer(primitives, particles);
+
+  // TODO: Создать uniform буферы здесь
+  vulkan_core::create_uniform_buffers(primitives);
+
+  vulkan_core::create_descriptor_pool_and_sets(primitives);
+
+  // Записать команды (после создания буферов!)
+  if (auto e = vulkan_core::record_command_buffers(primitives); e.is_error()) {
+    throw std::runtime_error(e.err_msg);
+  }
+
+  // Синхронизация (ваши frames)
   vulkan_core::init_frames(primitives);
-  auto _0 = vulkan_core::create_render_pass(primitives);
-  auto _1 = vulkan_core::create_graphics_pipeline(primitives);
 }
 
 error::Result<bool> Renderer::render() {
@@ -147,6 +157,18 @@ error::Result<bool> Renderer::render() {
   EndFrame(frame);
   // return error::Result<bool>::error(1, "");
   return error::Result<bool>::success(true);
+}
+
+error::Result<bool> Renderer::render_frame() {
+  auto &frame = primitives.frames[primitives.frameIndex];
+
+  begin_frame(frame);
+  update_uniform_buffer(frame);
+  record_draw_commands(frame, primitives.currentSwapchainImageIndex);
+  submit_commands(frame);
+  present_frame(frame);
+  primitives.frameIndex =
+      (primitives.frameIndex + 1) % vulkan_core::IN_FLIGHT_FRAME_COUNT;
 }
 
 } // namespace render

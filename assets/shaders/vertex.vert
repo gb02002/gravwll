@@ -1,4 +1,5 @@
-#version 450
+#version 460
+#extension GL_EXT_buffer_reference : require
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in float inMass;
