@@ -2,7 +2,6 @@
 #include "ctx/ctx.h"
 #include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
-#include "engine/pairwise.h"
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -10,7 +9,7 @@
 #include <vector>
 
 void PhysicsEngine::MainCycle() {
-  std::cout << "Мы в основном цикле движка!";
+  std::cout << "Мы в основном цикле движка!\n";
   using namespace std::chrono;
 
   // Начальное значение следующего тика

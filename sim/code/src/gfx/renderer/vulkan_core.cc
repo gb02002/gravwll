@@ -1,6 +1,6 @@
 #include "gfx/vulkan_core.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_video.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_vulkan.h"
+#include "SDL3/SDL_video.h"
+#include "SDL3/SDL_vulkan.h"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
 #include <array>
@@ -167,6 +167,44 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
   }
 }
 
+uint32_t find_memory_type(VulkanCore &core, uint32_t type_filter,
+                          vk::MemoryPropertyFlags properties) {
+  vk::PhysicalDeviceMemoryProperties mem_properties =
+      core.physicalDevice.getMemoryProperties();
+
+  for (uint32_t i = 0; i < mem_properties.memoryTypeCount; ++i) {
+    if ((type_filter & (1 << i)) &&
+        (mem_properties.memoryTypes[i].propertyFlags & properties) ==
+            properties) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("Failed to find suitable memory type");
+}
+
+void create_buffer(VulkanCore &core, vk::DeviceSize size,
+                   vk::BufferUsageFlags usage,
+                   vk::MemoryPropertyFlags properties, vk::raii::Buffer &buffer,
+                   vk::raii::DeviceMemory &buffer_memory) {
+  vk::BufferCreateInfo buffer_info{};
+  buffer_info.size = size;
+  buffer_info.usage = usage;
+  buffer_info.sharingMode = vk::SharingMode::eExclusive;
+
+  buffer = vk::raii::Buffer(core.device, buffer_info);
+
+  vk::MemoryRequirements mem_requirements = buffer.getMemoryRequirements();
+
+  vk::MemoryAllocateInfo alloc_info;
+  alloc_info.allocationSize = mem_requirements.size;
+  alloc_info.memoryTypeIndex =
+      find_memory_type(core, mem_requirements.memoryTypeBits, properties);
+
+  buffer_memory = vk::raii::DeviceMemory(core.device, alloc_info);
+  buffer.bindMemory(*buffer_memory, 0);
+}
+
 void init_frames(VulkanCore &core) {
   assert(core.swapchainImages.size() >= IN_FLIGHT_FRAME_COUNT);
 
@@ -260,6 +298,7 @@ error::Result<bool> init_swapchain(VulkanCore &core, window::MyWindow &window) {
                      core.swapchainImages.size(),
                      static_cast<int>(core.swapchainImageFormat),
                      core.swapchainExtent.width, core.swapchainExtent.height);
+  debug::debug_print("Swapchain is inited");
   return error::Result<bool>::success(true);
 }
 
@@ -556,45 +595,227 @@ error::Result<bool> create_framebuffers(VulkanCore &core) {
   }
 }
 
-error::Result<bool> create_command_buffers(VulkanCore &core) {
+// error::Result<bool> create_command_buffers(VulkanCore &core) {
+//   try {
+//     vk::CommandBufferAllocateInfo allocInfo{};
+//     allocInfo.commandPool = *core.commandPool;
+//     allocInfo.level = vk::CommandBufferLevel::ePrimary;
+//     allocInfo.commandBufferCount =
+//         static_cast<uint32_t>(core.swapchain_frame_buffers.size());
+//
+//     core.command_buffers = core.device.allocateCommandBuffers(allocInfo);
+//
+//     debug::debug_print("Created {} command buffers for rendering",
+//                        core.command_buffers.size());
+//     return error::Result<bool>::success(true);
+//
+//   } catch (const vk::SystemError &e) {
+//     debug::debug_print("Failed to create command buffers: {}", e.what());
+//     return error::Result<bool>::error(-1, "Failed to create command
+//     buffers");
+//   }
+// }
+
+// void record_command_buffer(VulkanCore &core, vk::CommandBuffer commandBuffer,
+//                            uint32_t imageIndex) {
+//   vk::CommandBufferBeginInfo beginInfo{};
+//   beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+//   commandBuffer.begin(beginInfo);
+//
+//   vk::RenderPassBeginInfo renderPassInfo{};
+//   renderPassInfo.renderPass = *core.render_pass;
+//   renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
+//   renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
+//   renderPassInfo.renderArea.extent = core.swapchainExtent;
+//
+//   vk::ClearValue clearColor =
+//       vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+//   renderPassInfo.clearValueCount = 1;
+//   renderPassInfo.pClearValues = &clearColor;
+//
+//   commandBuffer.beginRenderPass(renderPassInfo,
+//   vk::SubpassContents::eInline);
+//
+//   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
+//                              *core.gfx_pipeline);
+//
+//   // Привязываем вершинный буфер
+//   vk::Buffer vertexBuffers[] = {*core.vertex_buffer};
+//   vk::DeviceSize offsets[] = {0};
+//   commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+//
+//   // Привязываем descriptor set (используем 0-й кадр для простоты)
+//   // В реальности нужно использовать descriptor set текущего кадра
+//   if (*core.frames[0].descriptor_set !=
+//       nullptr) { // Проверяем, что дескрипторный сет существует
+//     commandBuffer.bindDescriptorSets(
+//         vk::PipelineBindPoint::eGraphics, *core.pipeline_layout, 0, 1,
+//         &*core.frames[0].descriptor_set, 0, nullptr);
+//   } else {
+//     debug::debug_print("Warning: descriptor set is null for frame 0");
+//   }
+//
+//   commandBuffer.draw(static_cast<uint32_t>(core.particle_count), 1, 0, 0);
+//
+//   commandBuffer.endRenderPass();
+//   commandBuffer.end();
+// }
+
+error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
+                                                uint32_t imageIndex) {
   try {
-    core.command_buffers.reserve(core.swapchain_frame_buffers.size());
+    vk::CommandBufferBeginInfo beginInfo{};
+    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+    frame.commandBuffer.begin(beginInfo);
 
-    vk::CommandBufferAllocateInfo allocInfo{};
-    allocInfo.commandPool = *core.commandPool;
-    allocInfo.level = vk::CommandBufferLevel::ePrimary;
-    allocInfo.commandBufferCount =
-        static_cast<uint32_t>(core.swapchain_frame_buffers.size());
+    vk::RenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.renderPass = *core.render_pass;
+    renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
+    renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
+    renderPassInfo.renderArea.extent = core.swapchainExtent;
 
-    core.command_buffers = core.device.allocateCommandBuffers(allocInfo);
+    vk::ClearValue clearColor =
+        vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
 
-    debug::debug_print("Created {} command buffers for rendering",
-                       core.command_buffers.size());
+    frame.commandBuffer.beginRenderPass(renderPassInfo,
+                                        vk::SubpassContents::eInline);
+
+    // Привязываем пайплайн
+    frame.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                                     *core.gfx_pipeline);
+
+    // Привязываем вершинный буфер - используем std::array для правильного
+    // ArrayProxy
+    std::array<vk::Buffer, 1> vertexBuffers = {*core.vertex_buffer};
+    std::array<vk::DeviceSize, 1> offsets = {0};
+    frame.commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+
+    // Привязываем descriptor set ИМЕННО ЭТОГО КАДРА (текущего frame)
+    if (*frame.descriptor_set != nullptr) {
+      std::array<vk::DescriptorSet, 1> descriptorSets = {*frame.descriptor_set};
+      frame.commandBuffer.bindDescriptorSets(
+          vk::PipelineBindPoint::eGraphics, *core.pipeline_layout, 0,
+          descriptorSets, {} // пустой массив dynamicOffsets
+      );
+    } else {
+      debug::debug_print("Warning: descriptor set is null for frame");
+    }
+
+    // Рисуем
+    frame.commandBuffer.draw(static_cast<uint32_t>(core.particle_count), 1, 0,
+                             0);
+
+    frame.commandBuffer.endRenderPass();
+    frame.commandBuffer.end();
+
     return error::Result<bool>::success(true);
 
   } catch (const vk::SystemError &e) {
-    debug::debug_print("Failed to create command buffers: {}", e.what());
-    return error::Result<bool>::error(-1, "Failed to create command buffers");
+    debug::debug_print("Failed to record frame command buffer: {}", e.what());
+    return error::Result<bool>::error(-1,
+                                      "Failed to record frame command buffer");
+  }
+}
+error::Result<bool> create_uniform_buffers(VulkanCore &core) {
+  try {
+    vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    for (auto &frame : core.frames) {
+      create_buffer(core, bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
+                    vk::MemoryPropertyFlagBits::eHostVisible |
+                        vk::MemoryPropertyFlagBits::eHostCoherent,
+                    frame.uniform_buffer, frame.uniform_buffer_memory);
+
+      // WARNING: LLM proposes MemoryMapInfo2
+      vk::MemoryMapInfo mapInfo{};
+      mapInfo.memory = *frame.uniform_buffer_memory;
+      mapInfo.offset = 0;
+      mapInfo.size = bufferSize;
+      mapInfo.flags = vk::MemoryMapFlags();
+
+      frame.uniform_buffer_mapped = core.device.mapMemory2(mapInfo);
+
+      debug::debug_print("Created uniform buffer (size: {})", bufferSize);
+    }
+
+    return error::Result<bool>::success(true);
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to create uniform buffers: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to create uniform buffers");
+  }
+}
+error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
+  try {
+    // 1. Создать descriptor pool
+    vk::DescriptorPoolSize poolSize{vk::DescriptorType::eUniformBuffer,
+                                    IN_FLIGHT_FRAME_COUNT};
+    vk::DescriptorPoolCreateInfo pool_info{};
+    pool_info.poolSizeCount = 1;
+    pool_info.pPoolSizes = &poolSize;
+    pool_info.maxSets = IN_FLIGHT_FRAME_COUNT;
+    core.descriptor_pool = core.device.createDescriptorPool(pool_info);
+
+    debug::debug_print("Descriptor pool created");
+
+    // 2. Выделить descriptor sets для каждого кадра
+    std::vector<vk::DescriptorSetLayout> layouts(IN_FLIGHT_FRAME_COUNT,
+                                                 *core.descriptor_set_layout);
+    vk::DescriptorSetAllocateInfo alloc_info{};
+    alloc_info.descriptorPool = *core.descriptor_pool;
+    alloc_info.descriptorSetCount = IN_FLIGHT_FRAME_COUNT;
+    alloc_info.pSetLayouts = layouts.data();
+
+    auto sets = core.device.allocateDescriptorSets(alloc_info);
+
+    debug::debug_print("Allocated {} descriptor sets", sets.size());
+
+    // 3. Привязать uniform буферы к descriptor sets
+    for (size_t i = 0; i < core.frames.size(); i++) {
+      vk::DescriptorBufferInfo buffer_info{};
+      buffer_info.buffer = *core.frames[i].uniform_buffer;
+      buffer_info.offset = 0;
+      buffer_info.range = sizeof(UniformBufferObject);
+
+      vk::WriteDescriptorSet descriptor_write{};
+      descriptor_write.dstSet = *sets[i];
+      descriptor_write.dstBinding = 0;
+      descriptor_write.dstArrayElement = 0;
+      descriptor_write.descriptorType = vk::DescriptorType::eUniformBuffer;
+      descriptor_write.descriptorCount = 1;
+      descriptor_write.pBufferInfo = &buffer_info;
+
+      core.device.updateDescriptorSets(descriptor_write, nullptr);
+
+      // Сохранить descriptor set в Frame
+      core.frames[i].descriptor_set = std::move(sets[i]);
+
+      debug::debug_print("Bound uniform buffer to descriptor set {}", i);
+    }
+
+    return error::Result<bool>::success(true);
+  } catch (const vk::SystemError &e) {
+    debug::debug_print("Failed to create descriptor pool and sets: {}",
+                       e.what());
+    return error::Result<bool>::error(
+        -1, "Failed to create descriptor pool and sets");
   }
 }
 
-void record_command_buffer(VulkanCore &core, vk::CommandBuffer commandBuffer,
-                           uint32_t imageIndex) {
-  // Начинаем запись
-  vk::CommandBufferBeginInfo beginInfo{};
-  beginInfo.flags =
-      vk::CommandBufferUsageFlags(); // Можно использовать eOneTimeSubmit
+void record_draw_commands(VulkanCore &core, vk::CommandBuffer commandBuffer,
+                          uint32_t imageIndex, Frame &frame) {
 
+  vk::CommandBufferBeginInfo beginInfo{};
   commandBuffer.begin(beginInfo);
 
-  // Начинаем render pass
+  // Начать render pass
   vk::RenderPassBeginInfo renderPassInfo{};
   renderPassInfo.renderPass = *core.render_pass;
   renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
   renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
   renderPassInfo.renderArea.extent = core.swapchainExtent;
 
-  // Цвет очистки (черный)
   vk::ClearValue clearColor =
       vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
   renderPassInfo.clearValueCount = 1;
@@ -602,83 +823,125 @@ void record_command_buffer(VulkanCore &core, vk::CommandBuffer commandBuffer,
 
   commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
-  // Привязываем пайплайн
+  // Привязать пайплайн
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                              *core.gfx_pipeline);
 
-  // TODO: Здесь будет привязка вершинного буфера и uniform буферов
-  // Пока просто рисуем без данных
-  commandBuffer.draw(3, 1, 0, 0); // Нарисовать 3 вершины (тест)
+  // Привязать вершинный буфер
+  vk::Buffer vertexBuffers[] = {*core.vertex_buffer};
+  vk::DeviceSize offsets[] = {0};
+  commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-  // Заканчиваем render pass
+  // Привязать descriptor set (uniform буфер)
+  commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                   *core.pipeline_layout, 0, 1,
+                                   &*frame.descriptor_set, 0, nullptr);
+
+  // Нарисовать частицы
+  commandBuffer.draw(static_cast<uint32_t>(core.particle_count), 1, 0, 0);
+
+  // Завершить render pass
   commandBuffer.endRenderPass();
 
-  // Заканчиваем запись
   commandBuffer.end();
 }
 
-error::Result<bool> record_command_buffers(VulkanCore &core) {
+error::Result<bool> create_vertex_buffer(VulkanCore &core) {
   try {
-    for (size_t i = 0; i < core.command_buffers.size(); i++) {
-      record_command_buffer(core, *core.command_buffers[i],
-                            static_cast<uint32_t>(i));
-    }
-    debug::debug_print("Recorded commands for {} command buffers",
-                       core.command_buffers.size());
+    struct TestVertex {
+      float pos[3];
+      float mass;
+    };
+
+    std::vector<TestVertex> vertices = {{{-0.5f, -0.5f, 0.0f}, 1.0f},
+                                        {{0.5f, -0.5f, 0.0f}, 2.0f},
+                                        {{0.0f, 0.5f, 0.0f}, 3.0f}};
+
+    core.particle_count = vertices.size();
+    vk::DeviceSize bufferSize = sizeof(TestVertex) * vertices.size();
+
+    // Создаем временный staging буфер
+    vk::raii::Buffer stagingBuffer{nullptr};
+    vk::raii::DeviceMemory stagingBufferMemory{nullptr};
+
+    create_buffer(core, bufferSize, vk::BufferUsageFlagBits::eTransferSrc,
+                  vk::MemoryPropertyFlagBits::eHostVisible |
+                      vk::MemoryPropertyFlagBits::eHostCoherent,
+                  stagingBuffer, stagingBufferMemory);
+
+    // WARNING: same here
+    vk::MemoryMapInfo mapInfo{};
+    mapInfo.memory = *stagingBufferMemory;
+    mapInfo.offset = 0;
+    mapInfo.size = bufferSize;
+    mapInfo.flags = vk::MemoryMapFlags();
+
+    void *data = core.device.mapMemory2(mapInfo);
+    memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+
+    // WARNING: same here
+    vk::MemoryUnmapInfo unmapInfo{};
+    unmapInfo.memory = *stagingBufferMemory;
+    core.device.unmapMemory2(unmapInfo);
+
+    // Создаем конечный vertex буфер
+    create_buffer(core, bufferSize,
+                  vk::BufferUsageFlagBits::eVertexBuffer |
+                      vk::BufferUsageFlagBits::eTransferDst,
+                  vk::MemoryPropertyFlagBits::eDeviceLocal, core.vertex_buffer,
+                  core.vertex_buffer_memory);
+
+    // Копируем из временного в конечный буфер
+    vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
+    allocInfo.commandPool = *core.commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    auto commandBuffers = core.device.allocateCommandBuffers(allocInfo);
+    vk::raii::CommandBuffer commandBuffer = std::move(commandBuffers[0]);
+
+    vk::CommandBufferBeginInfo beginInfo{};
+    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+    commandBuffer.begin(beginInfo);
+
+    vk::BufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = bufferSize;
+    commandBuffer.copyBuffer(*stagingBuffer, *core.vertex_buffer, copyRegion);
+
+    commandBuffer.end();
+
+    vk::SubmitInfo submitInfo{};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &*commandBuffer;
+
+    core.graphicsQueue.submit(submitInfo, nullptr);
+    core.graphicsQueue.waitIdle();
+
+    debug::debug_print("Created vertex buffer with {} vertices",
+                       core.particle_count);
     return error::Result<bool>::success(true);
+
   } catch (const vk::SystemError &e) {
-    debug::debug_print("Failed to record command buffers: {}", e.what());
-    return error::Result<bool>::error(-1, "Failed to record command buffers");
+    debug::debug_print("Failed to create vertex buffer: {}", e.what());
+    return error::Result<bool>::error(-1, "Failed to create vertex buffer");
   }
 }
+void copy_to_buffer(VulkanCore &core, vk::raii::DeviceMemory &dstMemory,
+                    const void *data, vk::DeviceSize size) {
+  // WARNING: LLM proposes MemoryMapInfo2 and MemoryUnmapInfo2
+  vk::MemoryMapInfo mapInfo{};
+  mapInfo.memory = *dstMemory;
+  mapInfo.offset = 0;
+  mapInfo.size = size;
+  mapInfo.flags = vk::MemoryMapFlags();
 
-void create_uniform_buffers(VulkanCore &core) {
-  for (auto &frame : core.frames) {
-    // TODO: Создать uniform буфер
-    // Выделить память
-    // Отобразить в адресное пространство CPU
-  }
-}
+  void *mappedData = core.device.mapMemory2(mapInfo);
+  memcpy(mappedData, data, static_cast<size_t>(size));
 
-void create_descriptor_pool_and_sets(VulkanCore &core) {
-  // 1. Создать descriptor pool
-  vk::DescriptorPoolSize poolSize{vk::DescriptorType::eUniformBuffer,
-                                  IN_FLIGHT_FRAME_COUNT};
-  vk::DescriptorPoolCreateInfo poolInfo{};
-  poolInfo.poolSizeCount = 1;
-  poolInfo.pPoolSizes = &poolSize;
-  poolInfo.maxSets = IN_FLIGHT_FRAME_COUNT;
-  core.descriptor_pool = core.device.createDescriptorPool(poolInfo);
-
-  // 2. Выделить descriptor sets для каждого кадра
-  std::vector<vk::DescriptorSetLayout> layouts(IN_FLIGHT_FRAME_COUNT,
-                                               *core.descriptor_set_layout);
-  vk::DescriptorSetAllocateInfo allocInfo{};
-  allocInfo.descriptorPool = *core.descriptor_pool;
-  allocInfo.descriptorSetCount = IN_FLIGHT_FRAME_COUNT;
-  allocInfo.pSetLayouts = layouts.data();
-
-  auto sets = core.device.allocateDescriptorSets(allocInfo);
-
-  // 3. Привязать uniform буферы к descriptor sets
-  for (size_t i = 0; i < core.frames.size(); i++) {
-    vk::DescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = *core.frames[i].uniform_buffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
-
-    vk::WriteDescriptorSet descriptorWrite{};
-    descriptorWrite.dstSet = *sets[i];
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    core.device.updateDescriptorSets(descriptorWrite, nullptr);
-
-    // Сохранить descriptor set в Frame
-    core.frames[i].descriptorSet = std::move(sets[i]);
-  }
+  vk::MemoryUnmapInfo unmapInfo{};
+  unmapInfo.memory = *dstMemory;
+  core.device.unmapMemory2(unmapInfo);
 }
 } // namespace vulkan_core

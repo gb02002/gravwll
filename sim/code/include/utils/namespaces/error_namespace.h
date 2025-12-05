@@ -38,8 +38,8 @@ constexpr void debug_assert(
 }
 
 template <typename... Args>
-inline constexpr void debug_print(std::format_string<Args...> fmt,
-                                  Args &&...args) {
+inline constexpr void debug_print_unsafe(std::format_string<Args...> fmt,
+                                         Args &&...args) {
   if constexpr (CURRENT_MODULE_DEBUG) {
     std::cout << "[DEBUG] " << std::format(fmt, std::forward<Args>(args)...)
               << std::endl;
@@ -47,6 +47,19 @@ inline constexpr void debug_print(std::format_string<Args...> fmt,
   }
 }
 
+template <typename... Args>
+inline constexpr void debug_print(std::string_view fmt, Args &&...args) {
+  if constexpr (CURRENT_MODULE_DEBUG) {
+    try {
+      std::string message = std::vformat(fmt, std::make_format_args(args...));
+      std::cout << "[DEBUG] " << message << std::endl;
+      std::cout.flush();
+    } catch (const std::format_error &e) {
+      std::cerr << "[DEBUG FORMAT ERROR] " << e.what() << " for: " << fmt
+                << std::endl;
+    }
+  }
+}
 } // namespace debug
 
 namespace stringify {

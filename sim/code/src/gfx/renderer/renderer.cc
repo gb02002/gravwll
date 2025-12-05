@@ -1,5 +1,8 @@
 #include "gfx/renderer/renderer.h"
+#include "chrono"
 #include "gfx/vulkan_core.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
 #include <cassert>
@@ -11,6 +14,23 @@
 #include <vulkan/vulkan_core.h>
 
 namespace render {
+
+// Объявим функции, которые используются в render()
+void Renderer::record_draw_commands(vulkan_core::Frame &frame,
+                                    uint32_t imageIndex) {
+  // TODO: реализовать запись команд отрисовки
+  // Пока заглушка
+}
+
+void Renderer::submit_commands(const vulkan_core::Frame &frame) {
+  // TODO: реализовать отправку команд
+  // Пока используем существующую функцию (если есть) или создадим
+}
+
+void Renderer::present_frame(const vulkan_core::Frame &frame) {
+  // TODO: реализовать отображение кадра
+  // Пока используем существующую EndFrame
+}
 
 // acquireNextImage gets written to currentSwapchainImageIndex with error
 // handling and awaiting fences
@@ -113,62 +133,163 @@ Renderer::Renderer(window::MyWindow &window)
     : primitives(vulkan_core::create_vulkan_core(window.window_name, window)
                      .unwrap()) {
 
-  vulkan_core::init_swapchain(primitives, window);
-  vulkan_core::create_image_views(primitives);
-  vulkan_core::create_render_pass(primitives);
-  vulkan_core::create_graphics_pipeline(primitives);
-  vulkan_core::create_framebuffers(primitives);
-
-  if (auto e = vulkan_core::create_command_buffers(primitives); e.is_error()) {
+  debug::debug_print("Step 0/10. We are in Renderer::Renderer");
+  if (auto e = vulkan_core::init_swapchain(primitives, window); e.is_error())
     throw std::runtime_error(e.err_msg);
-  }
 
-  // TODO: Создать вершинные буферы здесь
-  vulkan_core::create_vertex_buffer(primitives, particles);
-
-  // TODO: Создать uniform буферы здесь
-  vulkan_core::create_uniform_buffers(primitives);
-
-  vulkan_core::create_descriptor_pool_and_sets(primitives);
-
-  // Записать команды (после создания буферов!)
-  if (auto e = vulkan_core::record_command_buffers(primitives); e.is_error()) {
+  if (auto e = vulkan_core::create_image_views(primitives); e.is_error())
     throw std::runtime_error(e.err_msg);
-  }
 
-  // Синхронизация (ваши frames)
+  debug::debug_print("Step 1/10. Creating render pass...");
+  if (auto e = vulkan_core::create_render_pass(primitives); e.is_error())
+    throw std::runtime_error(e.err_msg);
+
+  debug::debug_print("Step 2/10. Creating graphics pipeline...");
+  if (auto e = vulkan_core::create_graphics_pipeline(primitives); e.is_error())
+    throw std::runtime_error(e.err_msg);
+
+  debug::debug_print("Step 3/10. Creating framebuffers...");
+  if (auto e = vulkan_core::create_framebuffers(primitives); e.is_error())
+    throw std::runtime_error(e.err_msg);
+
+  // debug::debug_print("Step 4/10. Creating command buffers...");
+  // if (auto e = vulkan_core::create_command_buffers(primitives); e.is_error())
+  // throw std::runtime_error(e.err_msg);
+
+  debug::debug_print("Step 6/11. Creating vertex buffer");
+  if (auto e = vulkan_core::create_vertex_buffer(primitives); e.is_error())
+    throw std::runtime_error(e.err_msg);
+
+  debug::debug_print("Step 7/10. Creating descriptor pool and sets");
+  if (auto e = vulkan_core::create_descriptor_pool_and_sets(primitives);
+      e.is_error())
+    throw std::runtime_error(e.err_msg);
+
+  // Синхронизация (ваши frames) - создаст command buffers в каждом Frame
+  debug::debug_print("Step 9/10. Creating synchronizing frames");
   vulkan_core::init_frames(primitives);
+
+  debug::debug_print("Step 10/10. Renderer is constructed!");
 }
 
-error::Result<bool> Renderer::render() {
-  auto const &frame(primitives.frames[primitives.frameIndex]);
+void Renderer::update_uniform_buffer(vulkan_core::Frame &frame) {
+  static auto startTime = std::chrono::high_resolution_clock::now();
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  float time = std::chrono::duration<float, std::chrono::seconds::period>(
+                   currentTime - startTime)
+                   .count();
 
-  auto frame_start = begin_frame(frame);
-  if (frame_start.is_error()) {
-    debug::debug_print("begin_frame got {}", frame_start.err_msg);
-    error::Result<bool>::error(-1, "Can't begin frame");
-  }
+  vulkan_core::UniformBufferObject ubo{};
 
-  RecordCommandBuffer(
-      frame.commandBuffer,
-      primitives.swapchainImages[primitives.currentSwapchainImageIndex]);
+  // Создаем простую вращающуюся матрицу
+  glm::mat4 model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
+                                glm::vec3(0.0f, 0.0f, 1.0f));
+  glm::mat4 view =
+      glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                  glm::vec3(0.0f, 0.0f, 1.0f));
+  glm::mat4 proj =
+      glm::perspective(glm::radians(45.0f),
+                       primitives.swapchainExtent.width /
+                           (float)primitives.swapchainExtent.height,
+                       0.1f, 10.0f);
+  proj[1][1] *= -1; // Инвертируем Y для Vulkan
+  ubo.mvp = proj * view * model;
 
-  SubmitCommandBuffer(frame);
-  EndFrame(frame);
-  // return error::Result<bool>::error(1, "");
-  return error::Result<bool>::success(true);
+  // Копируем данные в uniform буфер (память уже отображена)
+  memcpy(frame.uniform_buffer_mapped, &ubo, sizeof(ubo));
 }
+
+// error::Result<bool> Renderer::render() {
+//   auto const &frame(primitives.frames[primitives.frameIndex]);
+//
+//   auto frame_start = begin_frame(frame);
+//   if (frame_start.is_error()) {
+//     debug::debug_print("begin_frame got {}", frame_start.err_msg);
+//     error::Result<bool>::error(-1, "Can't begin frame");
+//   }
+//
+//   RecordCommandBuffer(
+//       frame.commandBuffer,
+//       primitives.swapchainImages[primitives.currentSwapchainImageIndex]);
+//
+//   // FIX: Undefined
+//   // SubmitCommandBuffer(frame);
+//   EndFrame(frame);
+//   // return error::Result<bool>::error(1, "");
+//   return error::Result<bool>::success(true);
+// }
 
 error::Result<bool> Renderer::render_frame() {
   auto &frame = primitives.frames[primitives.frameIndex];
 
-  begin_frame(frame);
+  // Ждем, пока кадр освободится
+  auto waitResult =
+      primitives.device.waitForFences(*frame.fence, VK_TRUE, UINT64_MAX);
+  if (waitResult != vk::Result::eSuccess) {
+    return error::Result<bool>::error(-1, "Failed to wait for fence");
+  }
+  primitives.device.resetFences(*frame.fence);
+
+  // Получаем изображение из swapchain
+  uint32_t imageIndex;
+  auto [acquireResult, index] = primitives.swapchain.acquireNextImage(
+      UINT64_MAX, *frame.imageAvailableSemaphore, nullptr);
+  imageIndex = index;
+
+  if (acquireResult != vk::Result::eSuccess &&
+      acquireResult != vk::Result::eSuboptimalKHR) {
+    return error::Result<bool>::error(-1, "Failed to acquire swapchain image");
+  }
+
+  primitives.currentSwapchainImageIndex = imageIndex;
+
+  // Обновляем uniform буфер для текущего кадра
   update_uniform_buffer(frame);
-  record_draw_commands(frame, primitives.currentSwapchainImageIndex);
-  submit_commands(frame);
-  present_frame(frame);
+
+  // Сбрасываем и записываем командный буфер текущего кадра
+  frame.commandBuffer.reset();
+  if (auto e = vulkan_core::record_frame_command_buffer(primitives, frame,
+                                                        imageIndex);
+      e.is_error()) {
+    return e;
+  }
+
+  // Отправляем команды
+  vk::SubmitInfo submitInfo{};
+  vk::Semaphore waitSemaphores[] = {*frame.imageAvailableSemaphore};
+  vk::PipelineStageFlags waitStages[] = {
+      vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  submitInfo.waitSemaphoreCount = 1;
+  submitInfo.pWaitSemaphores = waitSemaphores;
+  submitInfo.pWaitDstStageMask = waitStages;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &*frame.commandBuffer;
+
+  vk::Semaphore signalSemaphores[] = {*frame.renderFinishedSemaphore};
+  submitInfo.signalSemaphoreCount = 1;
+  submitInfo.pSignalSemaphores = signalSemaphores;
+
+  primitives.graphicsQueue.submit(submitInfo, *frame.fence);
+
+  // Отображаем кадр
+  vk::PresentInfoKHR presentInfo{};
+  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.pWaitSemaphores = signalSemaphores;
+  presentInfo.swapchainCount = 1;
+  presentInfo.pSwapchains = &*primitives.swapchain;
+  presentInfo.pImageIndices = &imageIndex;
+
+  auto presentResult = primitives.graphicsQueue.presentKHR(presentInfo);
+
+  if (presentResult != vk::Result::eSuccess &&
+      presentResult != vk::Result::eSuboptimalKHR) {
+    return error::Result<bool>::error(-1, "Failed to present swapchain image");
+  }
+
+  // Переходим к следующему кадру
   primitives.frameIndex =
       (primitives.frameIndex + 1) % vulkan_core::IN_FLIGHT_FRAME_COUNT;
-}
 
+  return error::Result<bool>::success(true);
+}
 } // namespace render

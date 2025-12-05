@@ -1,10 +1,8 @@
 #include "gfx/window.h"
+#include "SDL3/SDL_error.h"
+#include "SDL3/SDL_hints.h"
+#include "SDL3/SDL_video.h"
 #include "SDL3/SDL_vulkan.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_error.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_hints.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_video.h"
-#include "gravwll/third_party/sdl3/include/SDL3/SDL_vulkan.h"
-#include "gravwll/third_party/sdl3/src/video/khronos/vulkan/vulkan_core.h"
 #include "utils/namespaces/error_namespace.h"
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_scancode.h>

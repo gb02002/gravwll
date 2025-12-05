@@ -31,7 +31,7 @@ void GfxEngine::run() {
     if (window.handle_events())
       s_state.request_exit();
 
-    render->render();
+    render->render_frame();
   }
 
   std::cout << "Exited GfxEngine::run(). Frame counter = " << total_frames
