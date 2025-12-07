@@ -79,21 +79,7 @@ void Renderer::update_uniform_buffer(vulkan_core::Frame &frame) {
 
   vulkan_core::UniformBufferObject ubo{};
 
-  // Простая ортогональная проекция для 2D
-  // Координаты от -1 до 1 по X и Y
-  float left = -1.0f;
-  float right = 1.0f;
-  float bottom = -1.0f;
-  float top = 1.0f;
-  float near = 0.0f; // Изменяем near на 0
-  float far = 1.0f;
-
-  // glm::ortho создает матрицу, которая преобразует координаты в clip space
-  ubo.mvp = glm::ortho(left, right, bottom, top, near, far);
-
-  // Для отладки: вращение для проверки, что матрица работает
-  ubo.mvp = glm::rotate(ubo.mvp, time * glm::radians(45.0f),
-                        glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.mvp = glm::mat4(1.0f); // Identity matrix - no transformation
 
   // Для отладки: можно вывести матрицу
   debug::debug_print("Matrix mvp[0][0]: {}", ubo.mvp[0][0]);
