@@ -11,6 +11,7 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -18,7 +19,6 @@
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_wayland.h>
-// #include <vulkan/vulkan_xlib.h>
 
 const std::vector<const char *> validation_layers = {
     "VK_LAYER_KHRONOS_validation"};
@@ -106,7 +106,7 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
     }
 
     // 1. Instance
-    vk::ApplicationInfo appInfo{appName, 1, "Vulkan!", 1, VK_API_VERSION_1_3};
+    vk::ApplicationInfo appInfo{appName, 1, "Vulkan!", 1, VK_API_VERSION_1_4};
     vk::InstanceCreateInfo ici({}, &appInfo);
     ici.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     ici.ppEnabledExtensionNames = extensions.data();
@@ -372,7 +372,7 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     attr_mass.offset = offsetof(Vertex, mass);
 
     std::array<vk::VertexInputAttributeDescription, 2> attribute_descriptions =
-        {attr_mass, attr_mass};
+        {attr_pos, attr_mass};
 
     vk::PipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -405,17 +405,21 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     viewport_state.pScissors = &scissor;
 
     vk::PipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.setRasterizerDiscardEnable(VK_FALSE);
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = vk::PolygonMode::ePoint;
+    rasterizer.polygonMode = vk::PolygonMode::eFill;
+    // rasterizer.polygonMode = vk::PolygonMode::ePoint;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+    // rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+    rasterizer.cullMode = vk::CullModeFlagBits::eNone;
     rasterizer.frontFace = vk::FrontFace::eClockwise;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     vk::PipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
+    multisampling.alphaToCoverageEnable = VK_FALSE;
 
     vk::PipelineColorBlendAttachmentState color_blend_attachment{};
     color_blend_attachment.colorWriteMask =
@@ -595,78 +599,34 @@ error::Result<bool> create_framebuffers(VulkanCore &core) {
   }
 }
 
-// error::Result<bool> create_command_buffers(VulkanCore &core) {
-//   try {
-//     vk::CommandBufferAllocateInfo allocInfo{};
-//     allocInfo.commandPool = *core.commandPool;
-//     allocInfo.level = vk::CommandBufferLevel::ePrimary;
-//     allocInfo.commandBufferCount =
-//         static_cast<uint32_t>(core.swapchain_frame_buffers.size());
-//
-//     core.command_buffers = core.device.allocateCommandBuffers(allocInfo);
-//
-//     debug::debug_print("Created {} command buffers for rendering",
-//                        core.command_buffers.size());
-//     return error::Result<bool>::success(true);
-//
-//   } catch (const vk::SystemError &e) {
-//     debug::debug_print("Failed to create command buffers: {}", e.what());
-//     return error::Result<bool>::error(-1, "Failed to create command
-//     buffers");
-//   }
-// }
-
-// void record_command_buffer(VulkanCore &core, vk::CommandBuffer commandBuffer,
-//                            uint32_t imageIndex) {
-//   vk::CommandBufferBeginInfo beginInfo{};
-//   beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-//   commandBuffer.begin(beginInfo);
-//
-//   vk::RenderPassBeginInfo renderPassInfo{};
-//   renderPassInfo.renderPass = *core.render_pass;
-//   renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
-//   renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
-//   renderPassInfo.renderArea.extent = core.swapchainExtent;
-//
-//   vk::ClearValue clearColor =
-//       vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-//   renderPassInfo.clearValueCount = 1;
-//   renderPassInfo.pClearValues = &clearColor;
-//
-//   commandBuffer.beginRenderPass(renderPassInfo,
-//   vk::SubpassContents::eInline);
-//
-//   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-//                              *core.gfx_pipeline);
-//
-//   // Привязываем вершинный буфер
-//   vk::Buffer vertexBuffers[] = {*core.vertex_buffer};
-//   vk::DeviceSize offsets[] = {0};
-//   commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-//
-//   // Привязываем descriptor set (используем 0-й кадр для простоты)
-//   // В реальности нужно использовать descriptor set текущего кадра
-//   if (*core.frames[0].descriptor_set !=
-//       nullptr) { // Проверяем, что дескрипторный сет существует
-//     commandBuffer.bindDescriptorSets(
-//         vk::PipelineBindPoint::eGraphics, *core.pipeline_layout, 0, 1,
-//         &*core.frames[0].descriptor_set, 0, nullptr);
-//   } else {
-//     debug::debug_print("Warning: descriptor set is null for frame 0");
-//   }
-//
-//   commandBuffer.draw(static_cast<uint32_t>(core.particle_count), 1, 0, 0);
-//
-//   commandBuffer.endRenderPass();
-//   commandBuffer.end();
-// }
-
 error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
                                                 uint32_t imageIndex) {
   try {
+    std::cout << "Recording command buffer for image: " << imageIndex << "\n";
+    std::cout << "swapchainExtent: " << core.swapchainExtent.width << "x"
+              << core.swapchainExtent.height << "\n";
+
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
     frame.commandBuffer.begin(beginInfo);
+
+    vk::Viewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(core.swapchainExtent.width);
+    viewport.height = static_cast<float>(core.swapchainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vk::Rect2D scissor{};
+    scissor.offset = vk::Offset2D{0, 0};
+    scissor.extent = core.swapchainExtent;
+
+    std::array<vk::Viewport, 1> viewports = {viewport};
+    std::array<vk::Rect2D, 1> scissors = {scissor};
+
+    frame.commandBuffer.setViewport(0, viewports);
+    frame.commandBuffer.setScissor(0, scissors);
 
     vk::RenderPassBeginInfo renderPassInfo{};
     renderPassInfo.renderPass = *core.render_pass;
@@ -691,6 +651,7 @@ error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
     std::array<vk::Buffer, 1> vertexBuffers = {*core.vertex_buffer};
     std::array<vk::DeviceSize, 1> offsets = {0};
     frame.commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+    debug::debug_print("Drawing {} vertices", core.particle_count);
 
     // Привязываем descriptor set ИМЕННО ЭТОГО КАДРА (текущего frame)
     if (*frame.descriptor_set != nullptr) {
@@ -713,11 +674,12 @@ error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
     return error::Result<bool>::success(true);
 
   } catch (const vk::SystemError &e) {
-    debug::debug_print("Failed to record frame command buffer: {}", e.what());
+    std::cout << "Failed to record frame command buffer" << e.what();
     return error::Result<bool>::error(-1,
                                       "Failed to record frame command buffer");
   }
 }
+
 error::Result<bool> create_uniform_buffers(VulkanCore &core) {
   try {
     vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -728,7 +690,6 @@ error::Result<bool> create_uniform_buffers(VulkanCore &core) {
                         vk::MemoryPropertyFlagBits::eHostCoherent,
                     frame.uniform_buffer, frame.uniform_buffer_memory);
 
-      // WARNING: LLM proposes MemoryMapInfo2
       vk::MemoryMapInfo mapInfo{};
       mapInfo.memory = *frame.uniform_buffer_memory;
       mapInfo.offset = 0;
@@ -746,6 +707,7 @@ error::Result<bool> create_uniform_buffers(VulkanCore &core) {
     return error::Result<bool>::error(-1, "Failed to create uniform buffers");
   }
 }
+
 error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
   try {
     // 1. Создать descriptor pool
@@ -755,7 +717,8 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
     pool_info.poolSizeCount = 1;
     pool_info.pPoolSizes = &poolSize;
     pool_info.maxSets = IN_FLIGHT_FRAME_COUNT;
-    core.descriptor_pool = core.device.createDescriptorPool(pool_info);
+    core.descriptor_pool = std::make_unique<vk::raii::DescriptorPool>(
+        core.device.createDescriptorPool(pool_info));
 
     debug::debug_print("Descriptor pool created");
 
@@ -803,49 +766,6 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
   }
 }
 
-void record_draw_commands(VulkanCore &core, vk::CommandBuffer commandBuffer,
-                          uint32_t imageIndex, Frame &frame) {
-
-  vk::CommandBufferBeginInfo beginInfo{};
-  commandBuffer.begin(beginInfo);
-
-  // Начать render pass
-  vk::RenderPassBeginInfo renderPassInfo{};
-  renderPassInfo.renderPass = *core.render_pass;
-  renderPassInfo.framebuffer = *core.swapchain_frame_buffers[imageIndex];
-  renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
-  renderPassInfo.renderArea.extent = core.swapchainExtent;
-
-  vk::ClearValue clearColor =
-      vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-  renderPassInfo.clearValueCount = 1;
-  renderPassInfo.pClearValues = &clearColor;
-
-  commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-  // Привязать пайплайн
-  commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                             *core.gfx_pipeline);
-
-  // Привязать вершинный буфер
-  vk::Buffer vertexBuffers[] = {*core.vertex_buffer};
-  vk::DeviceSize offsets[] = {0};
-  commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-
-  // Привязать descriptor set (uniform буфер)
-  commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                   *core.pipeline_layout, 0, 1,
-                                   &*frame.descriptor_set, 0, nullptr);
-
-  // Нарисовать частицы
-  commandBuffer.draw(static_cast<uint32_t>(core.particle_count), 1, 0, 0);
-
-  // Завершить render pass
-  commandBuffer.endRenderPass();
-
-  commandBuffer.end();
-}
-
 error::Result<bool> create_vertex_buffer(VulkanCore &core) {
   try {
     struct TestVertex {
@@ -853,10 +773,13 @@ error::Result<bool> create_vertex_buffer(VulkanCore &core) {
       float mass;
     };
 
-    std::vector<TestVertex> vertices = {{{-0.5f, -0.5f, 0.0f}, 1.0f},
-                                        {{0.5f, -0.5f, 0.0f}, 2.0f},
-                                        {{0.0f, 0.5f, 0.0f}, 3.0f}};
-
+    std::vector<TestVertex> vertices = {
+        {{-0.8f, -0.8f, 0.0f}, 1.0f}, // левый нижний угол (красный)
+        {{0.8f, -0.8f, 0.0f}, 2.0f},  // правый нижний угол (зеленый)
+        {{-0.8f, 0.8f, 0.0f}, 3.0f},  // левый верхний угол (синий)
+        {{0.8f, 0.8f, 0.0f}, 4.0f},   // правый верхний угол (желтый)
+        {{0.0f, 0.0f, 0.0f}, 5.0f}    // центр (пурпурный)
+    };
     core.particle_count = vertices.size();
     vk::DeviceSize bufferSize = sizeof(TestVertex) * vertices.size();
 
@@ -944,4 +867,43 @@ void copy_to_buffer(VulkanCore &core, vk::raii::DeviceMemory &dstMemory,
   unmapInfo.memory = *dstMemory;
   core.device.unmapMemory2(unmapInfo);
 }
+
+void VulkanCore::clean_up() {
+  // 1. Ждем завершения всех операций
+  if (*device) {
+    device.waitIdle();
+  }
+
+  // 2. Вручную зануляем объекты в правильном порядке
+  swapchain_frame_buffers.clear();
+  swapchain_image_views.clear();
+
+  // 3. Уничтожаем frames вручную
+  for (auto &frame : frames) {
+    frame.commandBuffer = nullptr;
+    frame.imageAvailableSemaphore = nullptr;
+    frame.renderFinishedSemaphore = nullptr;
+    frame.fence = nullptr;
+    frame.uniform_buffer = nullptr;
+    frame.uniform_buffer_memory = nullptr;
+    frame.descriptor_set = nullptr;
+  }
+
+  // 4. Теперь можно уничтожать pool
+  descriptor_pool = nullptr;
+
+  // 5. Остальные объекты
+  gfx_pipeline = nullptr;
+  pipeline_layout = nullptr;
+  descriptor_set_layout = nullptr;
+  render_pass = nullptr;
+  vertex_buffer = nullptr;
+  vertex_buffer_memory = nullptr;
+  swapchain = nullptr;
+  commandPool = nullptr;
+  device = nullptr;
+  surface = nullptr;
+  instance = nullptr;
+}
+
 } // namespace vulkan_core

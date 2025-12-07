@@ -8,8 +8,6 @@ namespace render {
 class Renderer {
   vulkan_core::VulkanCore primitives;
 
-  error::Result<bool> begin_frame(const vulkan_core::Frame &fr);
-
   void SubmitCommandBuffer(vulkan_core::Frame const &frame);
   void EndFrame(vulkan_core::Frame const &frame);
 
@@ -17,6 +15,7 @@ class Renderer {
 
 public:
   Renderer(window::MyWindow &window);
+  ~Renderer();
   error::Result<bool> render();
   error::Result<bool> render_frame();
 

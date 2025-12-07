@@ -7,12 +7,11 @@ GfxEngine::GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree)
 void GfxEngine::init() {
   auto w_ = window.init();
   if (w_.is_error()) {
-    debug::debug_print("Cound not init window: {}", w_.err_msg);
+    debug::debug_print("Could not init window: {}", w_.err_msg);
     return;
   }
 
-  auto renderer_ = render::Renderer(window);
-  render = std::move(renderer_);
+  render = std::make_unique<render::Renderer>(window);
 };
 
 void GfxEngine::tick() {};
@@ -38,4 +37,4 @@ void GfxEngine::run() {
             << std::endl;
 };
 
-void GfxEngine::clean_up() {};
+void GfxEngine::clean_up() { render.reset(); };

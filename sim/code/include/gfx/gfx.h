@@ -3,7 +3,6 @@
 #include "ctx/simulation_state.h"
 #include "ds/tree/octree.h"
 #include "gfx/renderer/renderer.h"
-#include <optional>
 
 class GfxEngine {
 public:
@@ -20,7 +19,7 @@ private:
   AROctree &tree;
 
   window::MyWindow window;
-  std::optional<render::Renderer> render{};
+  std::unique_ptr<render::Renderer> render;
   void init_vulkan1();
   void init_vulkan();
 };

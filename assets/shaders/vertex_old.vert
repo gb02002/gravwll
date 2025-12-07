@@ -1,9 +1,10 @@
-// vertex.vert
 #version 460
+#extension GL_EXT_buffer_reference : require
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in float inMass;
-layout(location = 1) out float outMass;
+
+layout(location = 0) out float outMass;
 
 layout(set = 0, binding = 0) uniform UBO {
   mat4 mvp;
@@ -11,6 +12,5 @@ layout(set = 0, binding = 0) uniform UBO {
 
 void main() {
   gl_Position = ubo.mvp * vec4(inPosition, 1.0);
-  gl_PointSize = 20.0; // Уменьшаем до 5 пикселей
   outMass = inMass;
 }
