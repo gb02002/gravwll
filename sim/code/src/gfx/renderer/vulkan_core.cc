@@ -880,8 +880,8 @@ error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
 
 error::Result<bool> create_uniform_buffers(VulkanCore &core) {
   try {
-    vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
-    // vk::DeviceSize bufferSize = sizeof(CameraUBO);
+    // vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+    vk::DeviceSize bufferSize = sizeof(CameraUBO);
 
     for (auto &frame : core.frames) {
       create_buffer(core, bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
@@ -938,8 +938,8 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
       vk::DescriptorBufferInfo buffer_info{};
       buffer_info.buffer = *core.frames[i].uniform_buffer;
       buffer_info.offset = 0;
-      buffer_info.range = sizeof(UniformBufferObject);
-      // buffer_info.range = sizeof(CameraUBO);
+      // buffer_info.range = sizeof(UniformBufferObject);
+      buffer_info.range = sizeof(CameraUBO);
 
       vk::WriteDescriptorSet descriptor_write{};
       descriptor_write.dstSet = *sets[i];
@@ -972,14 +972,11 @@ error::Result<bool> create_vertex_buffer(VulkanCore &core) {
             << "offset of size: " << offsetof(Vertex, mass) << "\n";
   try {
     std::vector<Vertex> vertices = {
-        {{-0.1f, -0.1f, 0.0f}, 1.0f}, // левый нижний
-        {{0.1f, -0.1f, 0.0f}, 2.0f},  // правый нижний
-        {{-0.1f, 0.1f, 0.0f}, 3.0f},  // левый верхний
-
-        {{-0.1f, 0.1f, 0.0f}, 3.0f}, // левый верхний
-        {{0.1f, -0.1f, 0.0f}, 2.0f}, // правый нижний
-        {{0.1f, 0.1f, 0.0f}, 4.0f}   // правый верхний
-    };
+        {{-1.0f, -1.0f, 0.0f}, 1.0f}, // должен быть виден
+        {{1.0f, -1.0f, 0.0f}, 2.0f},
+        {{-1.0f, 1.0f, 0.0f}, 3.0f},
+        {{1.0f, 1.0f, 0.0f}, 4.0f},
+        {{0.0f, 0.0f, 0.0f}, 5.0f}};
     core.particle_count = vertices.size();
     vk::DeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 

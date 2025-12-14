@@ -5,15 +5,20 @@ layout(location = 1) in float inMass;
 
 layout(location = 0) out float outMass;
 
-layout(set = 0, binding = 0) uniform SimpleUBO {
-  mat4 mvp;
-} ubo;
+layout(set = 0, binding = 0) uniform CameraUBO {
+  mat4 view;
+  mat4 projection;
+  vec4 camera_pos;
+  float point_size;
+  float time;
+} camera;
 
 void main() {
-  gl_Position = ubo.mvp * vec4(inPosition, 1.0);
+  // Простое преобразование: view * projection
+  gl_Position = camera.projection * camera.view * vec4(inPosition, 1.0);
 
-  // Простой размер точки
-  gl_PointSize = 10.0;
+  // Фиксированный размер точки
+  gl_PointSize = camera.point_size;
 
   outMass = inMass;
 }

@@ -75,31 +75,37 @@ Renderer::~Renderer() {
 void Renderer::update_uniform_buffer(vulkan_core::Frame &frame,
                                      float delta_time) {
   static float total_time = 0.0f;
-  total_time += 0.016f; // ~60 FPS
+  total_time += 0.016f;
 
-  // Простейшая структура - только MVP матрица
-  struct SimpleUBO {
-    glm::mat4 mvp;
-  } ubo;
+  static vulkan_core::CameraUBO ubo{total_time};
 
-  // 1. Сначала используем identity matrix для теста
-  ubo.mvp = glm::mat4(1.0f);
+  // 1. Базовые параметры
+  ubo.point_size = 4.0f;
+  ubo.time = total_time;
 
-  // 2. Затем добавляем простую 2D ортогональную проекцию
-  float left = -1.0f;
-  float right = 1.0f;
-  float bottom = -1.0f;
-  float top = 1.0f;
-  float near = -1.0f;
-  float far = 1.0f;
+  // 2. Позиция камеры (вращается вокруг центра)
+  float radius = 5.0f;
+  float angle = total_time * 0.1f;
+  ubo.camera_pos = glm::vec4(radius * sin(angle), radius * cos(angle) * 0.3f,
+                             radius * cos(angle) * 0.3f, 1.0f);
 
-  glm::mat4 ortho = glm::ortho(left, right, bottom, top, near, far);
-  ubo.mvp = ortho;
+  // 3. Видовая матрица
+  ubo.view = glm::lookAt(glm::vec3(ubo.camera_pos), glm::vec3(0.0f, 0.0f, 0.0f),
+                         glm::vec3(0.0f, 0.0f, 1.0f));
 
-  // 3. Добавляем небольшое вращение для проверки
-  glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), total_time * 0.5f,
-                                   glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.mvp = ortho * rotation;
+  // 4. Перспективная проекция
+  float aspect = primitives.swapchainExtent.width /
+                 (float)primitives.swapchainExtent.height;
+  ubo.projection = glm::perspective(glm::radians(60.0f), // поле зрения
+                                    aspect,              // соотношение сторон
+                                    0.1f,                // ближняя плоскость
+                                    1000.0f              // дальняя плоскость
+  );
+
+  // 5. Инвертируем Y для Vulkan
+  ubo.projection[1][1] *= -1;
+  debug::debug_print("Camera position: [{:.2f}, {:.2f}, {:.2f}]",
+                     ubo.camera_pos.x, ubo.camera_pos.y, ubo.camera_pos.z);
 
   if (frame.uniform_buffer_mapped) {
     memcpy(frame.uniform_buffer_mapped, &ubo, sizeof(ubo));
