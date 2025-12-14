@@ -1,4 +1,0 @@
-#pragma once
-#include <string>
-#define CONFIG_DIRECTORY "@GRAVWLL_CONFIG@"
-const std::string ConfigFilePath = CONFIG_DIRECTORY;

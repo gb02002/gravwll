@@ -20,7 +20,7 @@ public:
   error::Result<bool> render_frame();
 
 private:
-  void update_uniform_buffer(vulkan_core::Frame &frame);
+  void update_uniform_buffer(vulkan_core::Frame &frame, float delta_time);
 
   void record_draw_commands(vulkan_core::Frame &frame, uint32_t imageIndex);
   void submit_commands(const vulkan_core::Frame &frame);

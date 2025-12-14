@@ -1,12 +1,14 @@
 #include "gfx/renderer/renderer.h"
-#include "chrono"
 #include "gfx/vulkan_core.h"
-#include "glm/ext/matrix_clip_space.hpp"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
 #include <cassert>
+#include <chrono>
 #include <cstdint>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_float4.hpp>
+#include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
@@ -70,19 +72,33 @@ Renderer::~Renderer() {
   }
 }
 
-void Renderer::update_uniform_buffer(vulkan_core::Frame &frame) {
+void Renderer::update_uniform_buffer(vulkan_core::Frame &frame,
+                                     float delta_time) {
   static auto startTime = std::chrono::high_resolution_clock::now();
   auto currentTime = std::chrono::high_resolution_clock::now();
   float time = std::chrono::duration<float, std::chrono::seconds::period>(
                    currentTime - startTime)
                    .count();
-
   vulkan_core::UniformBufferObject ubo{};
-
   ubo.mvp = glm::mat4(1.0f); // Identity matrix - no transformation
-
-  // Для отладки: можно вывести матрицу
-  debug::debug_print("Matrix mvp[0][0]: {}", ubo.mvp[0][0]);
+  // static vulkan_core::CameraUBO ubo;
+  // static float total_time = 0.0f;
+  // total_time += delta_time;
+  //
+  // ubo.time = total_time;
+  //
+  // float radius = 10.0f;
+  // float angle = total_time * 0.1f;
+  //
+  // ubo.camera_pos = glm::vec4(radius * sin(angle), radius * cos(angle) * 0.5f,
+  //                            radius * cos(angle) * 0.5f, 1.0f);
+  //
+  // ubo.projection =
+  //     glm::perspective(glm::radians(60.0f),
+  //                      (float)primitives.swapchainExtent.width /
+  //                          (float)primitives.swapchainExtent.height,
+  //                      0.1f, 1000.0f);
+  // ubo.projection[1][1] *= -1;
 
   if (frame.uniform_buffer_mapped) {
     memcpy(frame.uniform_buffer_mapped, &ubo, sizeof(ubo));
@@ -97,6 +113,7 @@ error::Result<bool> Renderer::render_frame() {
   debug::debug_print("Rendering frame {}, image index: {}",
                      primitives.frameIndex,
                      primitives.currentSwapchainImageIndex);
+
   // Ждем, пока кадр освободится
   auto waitResult =
       primitives.device.waitForFences(*frame.fence, VK_TRUE, UINT64_MAX);
@@ -119,7 +136,13 @@ error::Result<bool> Renderer::render_frame() {
   primitives.currentSwapchainImageIndex = imageIndex;
 
   // Обновляем uniform буфер для текущего кадра
-  update_uniform_buffer(frame);
+  static auto last_time = std::chrono::high_resolution_clock::now();
+  auto current_time = std::chrono::high_resolution_clock::now();
+  float delta_time =
+      std::chrono::duration<float>(current_time - last_time).count();
+  last_time = current_time;
+
+  update_uniform_buffer(frame, delta_time);
 
   // Сбрасываем и записываем командный буфер текущего кадра
   frame.commandBuffer.reset();

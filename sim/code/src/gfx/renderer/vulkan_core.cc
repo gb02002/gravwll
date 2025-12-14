@@ -1,6 +1,7 @@
 #include "gfx/vulkan_core.h"
 #include "SDL3/SDL_video.h"
 #include "SDL3/SDL_vulkan.h"
+#include "ctx/config.h"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
 #include <array>
@@ -13,6 +14,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -57,11 +59,191 @@ bool check_validation_layer_support() {
 }
 
 struct Vertex {
-  float x;
-  float y;
-  float z;
+  glm::vec3 pos;
   float mass;
 };
+
+error::Result<bool>
+physical_device_features(const vk::raii::PhysicalDevice p_device) {
+  std::vector<vk::ExtensionProperties> extension_properties =
+      p_device.enumerateDeviceExtensionProperties();
+  std::cout << "PhysicalDevice features" << "\n";
+
+  {
+    auto features2 = p_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDevice16BitStorageFeatures,
+        vk::PhysicalDevice8BitStorageFeaturesKHR,
+        vk::PhysicalDeviceASTCDecodeFeaturesEXT,
+        vk::PhysicalDeviceBlendOperationAdvancedFeaturesEXT,
+        vk::PhysicalDeviceBufferDeviceAddressFeaturesEXT,
+        vk::PhysicalDeviceCoherentMemoryFeaturesAMD,
+        vk::PhysicalDeviceComputeShaderDerivativesFeaturesNV,
+        vk::PhysicalDeviceConditionalRenderingFeaturesEXT,
+        vk::PhysicalDeviceCooperativeMatrixFeaturesNV,
+        vk::PhysicalDeviceCornerSampledImageFeaturesNV,
+        vk::PhysicalDeviceCoverageReductionModeFeaturesNV,
+        vk::PhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV,
+        vk::PhysicalDeviceDepthClipEnableFeaturesEXT,
+        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT,
+        vk::PhysicalDeviceExclusiveScissorFeaturesNV,
+        vk::PhysicalDeviceFragmentDensityMapFeaturesEXT,
+        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesNV,
+        vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
+        vk::PhysicalDeviceHostQueryResetFeaturesEXT,
+        vk::PhysicalDeviceImagelessFramebufferFeaturesKHR,
+        vk::PhysicalDeviceIndexTypeUint8FeaturesEXT,
+        vk::PhysicalDeviceInlineUniformBlockFeaturesEXT,
+        vk::PhysicalDeviceLineRasterizationFeaturesEXT,
+        vk::PhysicalDeviceMemoryPriorityFeaturesEXT,
+        vk::PhysicalDeviceMeshShaderFeaturesNV,
+        vk::PhysicalDeviceMultiviewFeatures,
+        vk::PhysicalDevicePipelineExecutablePropertiesFeaturesKHR,
+        vk::PhysicalDeviceProtectedMemoryFeatures,
+        vk::PhysicalDeviceRepresentativeFragmentTestFeaturesNV,
+        vk::PhysicalDeviceSamplerYcbcrConversionFeatures,
+        vk::PhysicalDeviceScalarBlockLayoutFeaturesEXT,
+        vk::PhysicalDeviceShaderAtomicInt64FeaturesKHR,
+        vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT,
+        vk::PhysicalDeviceShaderDrawParametersFeatures,
+        vk::PhysicalDeviceShaderFloat16Int8FeaturesKHR,
+        vk::PhysicalDeviceShaderImageFootprintFeaturesNV,
+        vk::PhysicalDeviceShaderIntegerFunctions2FeaturesINTEL,
+        vk::PhysicalDeviceShaderSMBuiltinsFeaturesNV,
+        vk::PhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR,
+        vk::PhysicalDeviceShadingRateImageFeaturesNV,
+        vk::PhysicalDeviceSubgroupSizeControlFeaturesEXT,
+        vk::PhysicalDeviceTexelBufferAlignmentFeaturesEXT,
+        vk::PhysicalDeviceTextureCompressionASTCHDRFeaturesEXT,
+        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR,
+        vk::PhysicalDeviceTransformFeedbackFeaturesEXT,
+        vk::PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR,
+        vk::PhysicalDeviceVariablePointersFeatures,
+        vk::PhysicalDeviceVertexAttributeDivisorFeaturesEXT,
+        vk::PhysicalDeviceVulkanMemoryModelFeaturesKHR,
+        vk::PhysicalDeviceYcbcrImageArraysFeaturesEXT>();
+    vk::PhysicalDeviceFeatures const &features =
+        features2.get<vk::PhysicalDeviceFeatures2>().features;
+    std::cout << "\tFeatures:\n";
+    std::cout << "\t\talphaToOne                              : "
+              << !!features.alphaToOne << "\n";
+    std::cout << "\t\tdepthBiasClamp                          : "
+              << !!features.depthBiasClamp << "\n";
+    std::cout << "\t\tdepthBounds                             : "
+              << !!features.depthBounds << "\n";
+    std::cout << "\t\tdepthClamp                              : "
+              << !!features.depthClamp << "\n";
+    std::cout << "\t\tdrawIndirectFirstInstance               : "
+              << !!features.drawIndirectFirstInstance << "\n";
+    std::cout << "\t\tdualSrcBlend                            : "
+              << !!features.dualSrcBlend << "\n";
+    std::cout << "\t\tfillModeNonSolid                        : "
+              << !!features.fillModeNonSolid << "\n";
+    std::cout << "\t\tfragmentStoresAndAtomics                : "
+              << !!features.fragmentStoresAndAtomics << "\n";
+    std::cout << "\t\tfullDrawIndexUint32                     : "
+              << !!features.fullDrawIndexUint32 << "\n";
+    std::cout << "\t\tgeometryShader                          : "
+              << !!features.geometryShader << "\n";
+    std::cout << "\t\timageCubeArray                          : "
+              << !!features.imageCubeArray << "\n";
+    std::cout << "\t\tindependentBlend                        : "
+              << !!features.independentBlend << "\n";
+    std::cout << "\t\tinheritedQueries                        : "
+              << !!features.inheritedQueries << "\n";
+    std::cout << "\t\tlargePoints                             : "
+              << !!features.largePoints << "\n";
+    std::cout << "\t\tlogicOp                                 : "
+              << !!features.logicOp << "\n";
+    std::cout << "\t\tmultiDrawIndirect                       : "
+              << !!features.multiDrawIndirect << "\n";
+    std::cout << "\t\tmultiViewport                           : "
+              << !!features.multiViewport << "\n";
+    std::cout << "\t\tocclusionQueryPrecise                   : "
+              << !!features.occlusionQueryPrecise << "\n";
+    std::cout << "\t\tpipelineStatisticsQuery                 : "
+              << !!features.pipelineStatisticsQuery << "\n";
+    std::cout << "\t\trobustBufferAccess                      : "
+              << !!features.robustBufferAccess << "\n";
+    std::cout << "\t\tsamplerAnisotropy                       : "
+              << !!features.samplerAnisotropy << "\n";
+    std::cout << "\t\tsampleRateShading                       : "
+              << !!features.sampleRateShading << "\n";
+    std::cout << "\t\tshaderClipDistance                      : "
+              << !!features.shaderClipDistance << "\n";
+    std::cout << "\t\tshaderCullDistance                      : "
+              << !!features.shaderCullDistance << "\n";
+    std::cout << "\t\tshaderFloat64                           : "
+              << !!features.shaderFloat64 << "\n";
+    std::cout << "\t\tshaderImageGatherExtended               : "
+              << !!features.shaderImageGatherExtended << "\n";
+    std::cout << "\t\tshaderInt16                             : "
+              << !!features.shaderInt16 << "\n";
+    std::cout << "\t\tshaderInt64                             : "
+              << !!features.shaderInt64 << "\n";
+    std::cout << "\t\tshaderResourceMinLod                    : "
+              << !!features.shaderResourceMinLod << "\n";
+    std::cout << "\t\tshaderResourceResidency                 : "
+              << !!features.shaderResourceResidency << "\n";
+    std::cout << "\t\tshaderSampledImageArrayDynamicIndexing  : "
+              << !!features.shaderSampledImageArrayDynamicIndexing << "\n";
+    std::cout << "\t\tshaderStorageBufferArrayDynamicIndexing : "
+              << !!features.shaderStorageBufferArrayDynamicIndexing << "\n";
+    std::cout << "\t\tshaderStorageImageArrayDynamicIndexing  : "
+              << !!features.shaderStorageImageArrayDynamicIndexing << "\n";
+    std::cout << "\t\tshaderStorageImageExtendedFormats       : "
+              << !!features.shaderStorageImageExtendedFormats << "\n";
+    std::cout << "\t\tshaderStorageImageMultisample           : "
+              << !!features.shaderStorageImageMultisample << "\n";
+    std::cout << "\t\tshaderStorageImageReadWithoutFormat     : "
+              << !!features.shaderStorageImageReadWithoutFormat << "\n";
+    std::cout << "\t\tshaderStorageImageWriteWithoutFormat    : "
+              << !!features.shaderStorageImageWriteWithoutFormat << "\n";
+    std::cout << "\t\tshaderTessellationAndGeometryPointSize  : "
+              << !!features.shaderTessellationAndGeometryPointSize << "\n";
+    std::cout << "\t\tshaderUniformBufferArrayDynamicIndexing : "
+              << !!features.shaderUniformBufferArrayDynamicIndexing << "\n";
+    std::cout << "\t\tsparseBinding                           : "
+              << !!features.sparseBinding << "\n";
+    std::cout << "\t\tsparseResidency16Samples                : "
+              << !!features.sparseResidency16Samples << "\n";
+    std::cout << "\t\tsparseResidency2Samples                 : "
+              << !!features.sparseResidency2Samples << "\n";
+    std::cout << "\t\tsparseResidency4Samples                 : "
+              << !!features.sparseResidency4Samples << "\n";
+    std::cout << "\t\tsparseResidency8Samples                 : "
+              << !!features.sparseResidency8Samples << "\n";
+    std::cout << "\t\tsparseResidencyAliased                  : "
+              << !!features.sparseResidencyAliased << "\n";
+    std::cout << "\t\tsparseResidencyBuffer                   : "
+              << !!features.sparseResidencyBuffer << "\n";
+    std::cout << "\t\tsparseResidencyImage2D                  : "
+              << !!features.sparseResidencyImage2D << "\n";
+    std::cout << "\t\tsparseResidencyImage3D                  : "
+              << !!features.sparseResidencyImage3D << "\n";
+    std::cout << "\t\ttessellationShader                      : "
+              << !!features.tessellationShader << "\n";
+    std::cout << "\t\ttextureCompressionASTC_LDR              : "
+              << !!features.textureCompressionASTC_LDR << "\n";
+    std::cout << "\t\ttextureCompressionBC                    : "
+              << !!features.textureCompressionBC << "\n";
+    std::cout << "\t\ttextureCompressionETC2                  : "
+              << !!features.textureCompressionETC2 << "\n";
+    std::cout << "\t\tvariableMultisampleRate                 : "
+              << !!features.variableMultisampleRate << "\n";
+    std::cout << "\t\tvertexPipelineStoresAndAtomics          : "
+              << !!features.vertexPipelineStoresAndAtomics << "\n";
+    std::cout << "\t\twideLines                               : "
+              << !!features.wideLines << "\n";
+    std::cout << "\n";
+    return error::Result<bool>::success(true);
+  }
+  auto properties = p_device.getProperties();
+  debug::debug_print("Point size range: {} - {}",
+                     properties.limits.pointSizeRange[0],
+                     properties.limits.pointSizeRange[1]);
+  debug::debug_print("Point size granularity: {}",
+                     properties.limits.pointSizeGranularity);
+}
 
 error::CResult<VulkanCore> create_vulkan_core(const char *appName,
                                               window::MyWindow &window) {
@@ -120,6 +302,15 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
     // 3. Physical device
     auto physicalDevices = core.instance.enumeratePhysicalDevices();
     core.physicalDevice = physicalDevices.front();
+
+    // 3.5 Query physical device features
+    physical_device_features(core.physicalDevice);
+    vk::PhysicalDeviceFeatures vulkan_features{};
+    vulkan_features.shaderTessellationAndGeometryPointSize =
+        core.physicalDevice.getFeatures()
+            .shaderTessellationAndGeometryPointSize;
+    vulkan_features.largePoints = core.physicalDevice.getFeatures().largePoints;
+
     // 4. Queue family
     auto queueFamilies = core.physicalDevice.getQueueFamilyProperties();
     for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
@@ -136,6 +327,8 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
     queueCreateInfo.setQueuePriorities(queuePriorities);
 
     vk::DeviceCreateInfo deviceCreateInfo{};
+    deviceCreateInfo.pEnabledFeatures = &vulkan_features;
+
     std::array queueCreateInfos{queueCreateInfo};
     deviceCreateInfo.setQueueCreateInfos(queueCreateInfos);
     std::array<const char *const, 1> enabledExtensions{
@@ -312,8 +505,10 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
 
   debug::debug_print("Render pass created");
   try {
-    auto vertShader = load_shader("../assets/shaders/vertex.spv");
-    auto fragShader = load_shader("../assets/shaders/fragment.spv");
+    auto vertShader = load_shader("vertex.spv");
+    auto fragShader = load_shader("fragment.spv");
+    // auto vertShader = load_shader("../assets/shaders/vertex.spv");
+    // auto fragShader = load_shader("../assets/shaders/fragment.spv");
 
     vk::ShaderModuleCreateInfo vertShaderInfo{};
     vertShaderInfo.codeSize = vertShader.size();
@@ -363,7 +558,7 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     attr_pos.binding = 0;
     attr_pos.location = 0;
     attr_pos.format = vk::Format::eR32G32B32Sfloat;
-    attr_pos.offset = offsetof(Vertex, x);
+    attr_pos.offset = offsetof(Vertex, pos);
 
     vk::VertexInputAttributeDescription attr_mass{};
     attr_mass.binding = 0;
@@ -384,6 +579,7 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
 
     vk::PipelineInputAssemblyStateCreateInfo input_assembly{};
     input_assembly.topology = vk::PrimitiveTopology::ePointList;
+    // input_assembly.topology = vk::PrimitiveTopology::eTriangleList;
     input_assembly.primitiveRestartEnable = VK_FALSE;
 
     vk::Viewport viewport{};
@@ -515,8 +711,10 @@ error::Result<bool> create_render_pass(VulkanCore &core) {
 }
 
 static std::vector<char> load_shader(const std::string &filename) {
-  // std::cout << "Current path is " << std::filesystem::current_path() << '\n';
-  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+  std::string dir = std::string(SHADER_DIRECTORY);
+  std::string filepath = dir.empty() ? filename : dir + "/" + filename;
+
+  std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
     std::string err_msg = filename + ": cound not load";
@@ -683,6 +881,7 @@ error::Result<bool> record_frame_command_buffer(VulkanCore &core, Frame &frame,
 error::Result<bool> create_uniform_buffers(VulkanCore &core) {
   try {
     vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+    // vk::DeviceSize bufferSize = sizeof(CameraUBO);
 
     for (auto &frame : core.frames) {
       create_buffer(core, bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
@@ -740,6 +939,7 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
       buffer_info.buffer = *core.frames[i].uniform_buffer;
       buffer_info.offset = 0;
       buffer_info.range = sizeof(UniformBufferObject);
+      // buffer_info.range = sizeof(CameraUBO);
 
       vk::WriteDescriptorSet descriptor_write{};
       descriptor_write.dstSet = *sets[i];
@@ -767,21 +967,21 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
 }
 
 error::Result<bool> create_vertex_buffer(VulkanCore &core) {
+  std::cout << "Vertex struct size: " << sizeof(Vertex) << ", "
+            << "offset of pos: " << offsetof(Vertex, pos)
+            << "offset of size: " << offsetof(Vertex, mass) << "\n";
   try {
-    struct TestVertex {
-      float pos[3];
-      float mass;
-    };
+    std::vector<Vertex> vertices = {
+        {{-0.1f, -0.1f, 0.0f}, 1.0f}, // левый нижний
+        {{0.1f, -0.1f, 0.0f}, 2.0f},  // правый нижний
+        {{-0.1f, 0.1f, 0.0f}, 3.0f},  // левый верхний
 
-    std::vector<TestVertex> vertices = {
-        {{-0.8f, -0.8f, 0.0f}, 1.0f}, // левый нижний угол (красный)
-        {{0.8f, -0.8f, 0.0f}, 2.0f},  // правый нижний угол (зеленый)
-        {{-0.8f, 0.8f, 0.0f}, 3.0f},  // левый верхний угол (синий)
-        {{0.8f, 0.8f, 0.0f}, 4.0f},   // правый верхний угол (желтый)
-        {{0.0f, 0.0f, 0.0f}, 5.0f}    // центр (пурпурный)
+        {{-0.1f, 0.1f, 0.0f}, 3.0f}, // левый верхний
+        {{0.1f, -0.1f, 0.0f}, 2.0f}, // правый нижний
+        {{0.1f, 0.1f, 0.0f}, 4.0f}   // правый верхний
     };
     core.particle_count = vertices.size();
-    vk::DeviceSize bufferSize = sizeof(TestVertex) * vertices.size();
+    vk::DeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
     // Создаем временный staging буфер
     vk::raii::Buffer stagingBuffer{nullptr};
@@ -792,7 +992,6 @@ error::Result<bool> create_vertex_buffer(VulkanCore &core) {
                       vk::MemoryPropertyFlagBits::eHostCoherent,
                   stagingBuffer, stagingBufferMemory);
 
-    // WARNING: same here
     vk::MemoryMapInfo mapInfo{};
     mapInfo.memory = *stagingBufferMemory;
     mapInfo.offset = 0;

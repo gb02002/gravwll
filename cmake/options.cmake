@@ -14,6 +14,8 @@ option(ENABLE_TESTS "Enable unittesting" OFF)
 set(gravwll_codebase ${gravwll_root}/sim CACHE PATH "Path to the codebase")
 set(gravwll_config ${gravwll_root}/config CACHE PATH "Path to config directory")
 set(gravwll_tests_dir ${gravwll_root}/tests CACHE PATH "Path to tests")
+set(gravwll_assets_dir ${gravwll_root}/assets CACHE PATH "Path to assets")
+set(gravwll_shaders_dir ${gravwll_assets_dir}/shaders CACHE PATH "Path to assets")
 
 #======Configurations=======#
 
@@ -27,11 +29,7 @@ set(CMAKE_CXX_STANDART 20)
 set(CMAKE_CXX_STANDART_REQUIRED ON)
 
 set(GRAVWLL_CONFIG_DIR_PATH "${gravwll_config}")
+set(GRAVWLL_SHADER_DIR_PATH "${gravwll_shaders_dir}")
 message(STATUS "This is is GRAVWLL_CONFIG_DIR_PATH: ${GRAVWLL_CONFIG_DIR_PATH}")
-# configure_file(${gravwll_codebase}/code/include/ctx/simulation_config.h simulation_config.h)
+message(STATUS "This is is GRAVWLL_SHADER_DIR_PATH: ${GRAVWLL_SHADER_DIR_PATH}")
 include_directories(${CMAKE_BINARY_DIR})
-
-# add_compile_definitions(
-#     GRAVWLL_${gravwll_upper_platform}
-#     GRAVWLL_$<UPPER_CASE:$<CONFIG>>
-# )

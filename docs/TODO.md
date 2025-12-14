@@ -9,9 +9,25 @@
 ##### Render
 
 - [x] Read pipeline tutorial
-- [ ] Get any of our points to render
-- [ ] Introduce scene concept
-- [ ] Get camera and glm
-- [ ] Put everything together
+- [x] Get any of our points to render
+- [x] Introduce scene concept
+- [x] Get camera and glm
+- [x] Put everything together
+
+10.12:
+> Now we have render using static scene and camera. We must bring
+  semi-final shaders(difference must be left only in terms of camera),
+  and then try to figure out why each time introducing mvp-camera breaks
+  everything.
+
+- [ ] bring semi-final shaders
+- [ ] port static camera to mvp-camera keeping same position
+- [ ] make camera movable
+
+- [x] shaders-path to root-folder
+
+> Connect tree and vertex buffer
+
+- [ ] idk
 
 ##### Physics

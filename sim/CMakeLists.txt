@@ -23,8 +23,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${gravwll_source_code_dir}/include)
 
 set(CONFIG_PATH "${GRAVWLL_CONFIG_DIR_PATH}")
+set(SHADER_PATH "${GRAVWLL_SHADER_DIR_PATH}")
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/code/include/ctx/config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/code/include/ctx/config.h @ONLY)
+  ${CMAKE_CURRENT_SOURCE_DIR}/code/include/ctx/config.h @ONLY)
+
 target_include_directories(simulation PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/code/include
 )

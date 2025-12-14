@@ -19,6 +19,20 @@ struct ImageLayout {
   uint32_t queueFamilyIndex{VK_QUEUE_FAMILY_IGNORED};
 };
 
+struct CameraUBO {
+  glm::mat4 view;
+  glm::mat4 projection;
+  glm::vec4 camera_pos;
+  float time;
+
+  CameraUBO() {
+    view = glm::mat4(1.0f);
+    projection = glm::mat4(1.0f);
+    camera_pos = glm::vec4(0.0f, 0.0f, 5.0f, 1.0f);
+    time = 0.0f;
+  }
+};
+
 struct UniformBufferObject {
   alignas(16) glm::mat4 mvp;
 };
