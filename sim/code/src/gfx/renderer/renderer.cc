@@ -74,31 +74,32 @@ Renderer::~Renderer() {
 
 void Renderer::update_uniform_buffer(vulkan_core::Frame &frame,
                                      float delta_time) {
-  static auto startTime = std::chrono::high_resolution_clock::now();
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  float time = std::chrono::duration<float, std::chrono::seconds::period>(
-                   currentTime - startTime)
-                   .count();
-  vulkan_core::UniformBufferObject ubo{};
-  ubo.mvp = glm::mat4(1.0f); // Identity matrix - no transformation
-  // static vulkan_core::CameraUBO ubo;
-  // static float total_time = 0.0f;
-  // total_time += delta_time;
-  //
-  // ubo.time = total_time;
-  //
-  // float radius = 10.0f;
-  // float angle = total_time * 0.1f;
-  //
-  // ubo.camera_pos = glm::vec4(radius * sin(angle), radius * cos(angle) * 0.5f,
-  //                            radius * cos(angle) * 0.5f, 1.0f);
-  //
-  // ubo.projection =
-  //     glm::perspective(glm::radians(60.0f),
-  //                      (float)primitives.swapchainExtent.width /
-  //                          (float)primitives.swapchainExtent.height,
-  //                      0.1f, 1000.0f);
-  // ubo.projection[1][1] *= -1;
+  static float total_time = 0.0f;
+  total_time += 0.016f; // ~60 FPS
+
+  // Простейшая структура - только MVP матрица
+  struct SimpleUBO {
+    glm::mat4 mvp;
+  } ubo;
+
+  // 1. Сначала используем identity matrix для теста
+  ubo.mvp = glm::mat4(1.0f);
+
+  // 2. Затем добавляем простую 2D ортогональную проекцию
+  float left = -1.0f;
+  float right = 1.0f;
+  float bottom = -1.0f;
+  float top = 1.0f;
+  float near = -1.0f;
+  float far = 1.0f;
+
+  glm::mat4 ortho = glm::ortho(left, right, bottom, top, near, far);
+  ubo.mvp = ortho;
+
+  // 3. Добавляем небольшое вращение для проверки
+  glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), total_time * 0.5f,
+                                   glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.mvp = ortho * rotation;
 
   if (frame.uniform_buffer_mapped) {
     memcpy(frame.uniform_buffer_mapped, &ubo, sizeof(ubo));
