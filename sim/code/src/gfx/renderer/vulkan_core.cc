@@ -58,9 +58,33 @@ bool check_validation_layer_support() {
   return true;
 }
 
+struct VisualID {
+  uint64_t bits;
+
+  inline uint8_t category() const { return bits & 0xF; }
+  inline uint8_t subtype() const { return (bits >> 4) & 0xF; }
+  inline uint8_t shader() const { return (bits >> 8) & 0xFF; }
+  inline uint8_t texture() const { return (bits >> 16) & 0xFF; }
+  inline uint8_t lod() const { return (bits >> 24) & 0xFF; }
+  inline uint16_t sim_mode() const { return (bits >> 32) & 0xFFFF; }
+  inline uint16_t flags() const { return (bits >> 48) & 0xFFFF; }
+};
+
+constexpr VisualID make_visual_id(uint8_t cat, uint8_t subtype, uint8_t shader,
+                                  uint8_t texture, uint8_t lod,
+                                  uint16_t sim_mode, uint16_t flags = 0) {
+  return {(uint64_t(cat) & 0xF) | ((uint64_t(subtype) & 0xF) << 4) |
+          ((uint64_t(shader) & 0xFF) << 8) |
+          ((uint64_t(texture) & 0xFF) << 16) | ((uint64_t(lod) & 0xFF) << 24) |
+          ((uint64_t(sim_mode) & 0xFFFF) << 32) |
+          ((uint64_t(flags) & 0xFFFF) << 48)};
+}
+
 struct Vertex {
-  glm::vec3 pos;
-  float mass;
+  alignas(16) glm::vec3 position; // 16 bytes
+  float mass;                     // 4 bytes
+  uint32_t visual_id_low;         // 4 bytes - младшие 32 бита
+  uint32_t visual_id_high;        // 4 bytes - старшие 32 бита
 };
 
 error::Result<bool>
@@ -558,7 +582,7 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     attr_pos.binding = 0;
     attr_pos.location = 0;
     attr_pos.format = vk::Format::eR32G32B32Sfloat;
-    attr_pos.offset = offsetof(Vertex, pos);
+    attr_pos.offset = offsetof(Vertex, position);
 
     vk::VertexInputAttributeDescription attr_mass{};
     attr_mass.binding = 0;
@@ -566,8 +590,20 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     attr_mass.format = vk::Format::eR32Sfloat;
     attr_mass.offset = offsetof(Vertex, mass);
 
-    std::array<vk::VertexInputAttributeDescription, 2> attribute_descriptions =
-        {attr_pos, attr_mass};
+    vk::VertexInputAttributeDescription attr_visual_low{};
+    attr_visual_low.binding = 0;
+    attr_visual_low.location = 2; // location = 2 для первой части
+    attr_visual_low.format = vk::Format::eR32Uint;
+    attr_visual_low.offset = offsetof(Vertex, visual_id_low);
+
+    vk::VertexInputAttributeDescription attr_visual_high{};
+    attr_visual_high.binding = 0;
+    attr_visual_high.location = 3; // location = 3 для второй части
+    attr_visual_high.format = vk::Format::eR32Uint;
+    attr_visual_high.offset = offsetof(Vertex, visual_id_high);
+
+    std::array<vk::VertexInputAttributeDescription, 4> attribute_descriptions =
+        {attr_pos, attr_mass, attr_visual_low, attr_visual_high};
 
     vk::PipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -618,15 +654,27 @@ error::Result<bool> create_graphics_pipeline(VulkanCore &core) {
     multisampling.alphaToCoverageEnable = VK_FALSE;
 
     vk::PipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+    color_blend_attachment.dstColorBlendFactor =
+        vk::BlendFactor::eOneMinusSrcAlpha;
+    color_blend_attachment.colorBlendOp = vk::BlendOp::eAdd;
+    color_blend_attachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+    color_blend_attachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+    color_blend_attachment.alphaBlendOp = vk::BlendOp::eAdd;
     color_blend_attachment.colorWriteMask =
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
-    color_blend_attachment.blendEnable = VK_FALSE;
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
     color_blending.logicOpEnable = VK_FALSE;
+    color_blending.logicOp = vk::LogicOp::eCopy;
     color_blending.attachmentCount = 1;
     color_blending.pAttachments = &color_blend_attachment;
+    color_blending.blendConstants[0] = 0.0f;
+    color_blending.blendConstants[1] = 0.0f;
+    color_blending.blendConstants[2] = 0.0f;
+    color_blending.blendConstants[3] = 0.0f;
 
     vk::DescriptorSetLayoutBinding ubo_layout_binding{};
     ubo_layout_binding.binding = 0;
@@ -968,15 +1016,40 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
 
 error::Result<bool> create_vertex_buffer(VulkanCore &core) {
   std::cout << "Vertex struct size: " << sizeof(Vertex) << ", "
-            << "offset of pos: " << offsetof(Vertex, pos)
+            << "offset of pos: " << offsetof(Vertex, position)
             << "offset of size: " << offsetof(Vertex, mass) << "\n";
   try {
-    std::vector<Vertex> vertices = {
-        {{-1.0f, -1.0f, 0.0f}, 1.0f}, // должен быть виден
-        {{1.0f, -1.0f, 0.0f}, 2.0f},
-        {{-1.0f, 1.0f, 0.0f}, 3.0f},
-        {{1.0f, 1.0f, 0.0f}, 4.0f},
-        {{0.0f, 0.0f, 0.0f}, 5.0f}};
+    std::vector<Vertex> vertices{};
+
+    // Пример заполнения тестовыми данными
+    // В реальном коде здесь будет заполнение из ваших частиц
+    for (size_t i = 0; i < 1000; ++i) {
+      Vertex vertex{};
+      vertex.position = glm::vec3((rand() / (float)RAND_MAX - 0.5f) * 100.0f,
+                                  (rand() / (float)RAND_MAX - 0.5f) * 100.0f,
+                                  (rand() / (float)RAND_MAX - 0.5f) * 100.0f);
+      vertex.mass = 1.0f + (rand() / (float)RAND_MAX) * 100.0f;
+
+      // Создаем тестовый VisualID
+      // В реальном коде это будет браться из ваших частиц
+      uint8_t category = rand() % 7; // 0-6
+      uint8_t subtype = rand() % 6;  // 0-5
+      uint8_t shader = 0;            // базовый шейдер
+      uint8_t texture = 0;           // без текстуры
+      uint8_t lod = 0;               // базовый LOD
+      uint16_t sim_mode = 0;         // стандартный режим
+      uint16_t flags = 0;            // без флагов
+
+      VisualID vid = make_visual_id(category, subtype, shader, texture, lod,
+                                    sim_mode, flags);
+
+      // Разбиваем 64-битный ID на две 32-битные части
+      vertex.visual_id_low = static_cast<uint32_t>(vid.bits & 0xFFFFFFFF);
+      vertex.visual_id_high =
+          static_cast<uint32_t>((vid.bits >> 32) & 0xFFFFFFFF);
+
+      vertices.push_back(vertex);
+    }
     core.particle_count = vertices.size();
     vk::DeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 

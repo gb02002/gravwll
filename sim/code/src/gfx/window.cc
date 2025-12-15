@@ -10,8 +10,8 @@
 #include <utility>
 #include <vulkan/vulkan_raii.hpp>
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 2100
+#define HEIGHT 1600
 
 namespace window {
 

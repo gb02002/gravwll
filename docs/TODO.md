@@ -20,8 +20,8 @@
   and then try to figure out why each time introducing mvp-camera breaks
   everything.
 
-- [ ] bring semi-final shaders
-- [ ] port static camera to mvp-camera keeping same position
+- [x] bring semi-final shaders
+- [x] port static camera to mvp-camera keeping same position
 - [ ] make camera movable
 
 - [x] shaders-path to root-folder

@@ -9,7 +9,38 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_raii.hpp>
+// Категории (должны совпадать с C++ кодом)
+const uint CAT_STAR = 0;
+const uint CAT_PLANET = 1;
+const uint CAT_ASTEROID = 2;
+const uint CAT_DARK_MATTER = 3;
+const uint CAT_BLACK_HOLE = 4;
+const uint CAT_NEBULA = 5;
+const uint CAT_DEBRIS = 6;
+const uint CAT_UNKNOWN = 15;
 
+// Подтипы звезд
+const uint SUBTYPE_STAR_RED_DWARF = 0;
+const uint SUBTYPE_STAR_YELLOW = 1;
+const uint SUBTYPE_STAR_BLUE_GIANT = 2;
+const uint SUBTYPE_STAR_RED_GIANT = 3;
+const uint SUBTYPE_STAR_WHITE_DWARF = 4;
+const uint SUBTYPE_STAR_NEUTRON = 5;
+const uint SUBTYPE_STAR_BLACK_HOLE = 6;
+
+// Подтипы планет
+const uint SUBTYPE_PLANET_TERRESTRIAL = 0;
+const uint SUBTYPE_PLANET_GAS_GIANT = 1;
+const uint SUBTYPE_PLANET_ICE_GIANT = 2;
+const uint SUBTYPE_PLANET_DWARF = 3;
+const uint SUBTYPE_PLANET_OCEAN = 4;
+const uint SUBTYPE_PLANET_DESERT = 5;
+
+// Подтипы астероидов
+const uint SUBTYPE_ASTEROID_ROCKY = 0;
+const uint SUBTYPE_ASTEROID_METALLIC = 1;
+const uint SUBTYPE_ASTEROID_ICY = 2;
+const uint SUBTYPE_ASTEROID_CARBONACEOUS = 3;
 namespace vulkan_core {
 
 struct ImageLayout {
@@ -25,13 +56,18 @@ struct CameraUBO {
   glm::vec4 camera_pos;
   float point_size;
   float time;
+  float zoom_level;
+  float brightness;
 
-  CameraUBO(float time) {
+  CameraUBO(float t_time) {
     point_size = 4.0f;
     view = glm::mat4(1.0f);
     projection = glm::mat4(1.0f);
-    camera_pos = glm::vec4(0.0f, 0.0f, 5.0f, 1.0f);
-    time = 0.0f;
+    camera_pos = glm::vec4(0.0f, 0.0f, 10.0f, 1.0f);
+    point_size = 4.0f;
+    time = t_time;
+    zoom_level = 1.0f;
+    brightness = 1.0f;
   };
 };
 
