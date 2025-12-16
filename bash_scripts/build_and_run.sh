@@ -14,8 +14,7 @@ cd build || {
   echo "Couldn't enter build folder"
   exit 1
 }
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-#cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug ..
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS=-print-prog-name=ld -DCMAKE_CXX_FLAGS="-fuse-ld=mold" ..
 
 make "-j$(nproc)"
 cd ../bin/ || exit
