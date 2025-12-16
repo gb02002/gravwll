@@ -86,8 +86,9 @@ void Renderer::update_uniform_buffer(vulkan_core::Frame &frame,
   // 2. Позиция камеры (вращается вокруг центра)
   float radius = 5.0f;
   float angle = total_time * 0.1f;
-  ubo.camera_pos = glm::vec4(radius * sin(angle), radius * cos(angle) * 0.3f,
-                             radius * cos(angle) * 0.3f, 1.0f);
+  ubo.camera_pos =
+      glm::vec4(radius * sin(angle) - total_time * total_time,
+                radius * cos(angle) * 0.3f, radius * cos(angle) * 0.3f, 1.0f);
 
   // 3. Видовая матрица
   ubo.view = glm::lookAt(glm::vec3(ubo.camera_pos), glm::vec3(0.0f, 0.0f, 0.0f),

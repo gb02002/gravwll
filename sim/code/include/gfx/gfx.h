@@ -20,6 +20,4 @@ private:
 
   window::MyWindow window;
   std::unique_ptr<render::Renderer> render;
-  void init_vulkan1();
-  void init_vulkan();
 };
