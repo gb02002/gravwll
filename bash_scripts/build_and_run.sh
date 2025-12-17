@@ -16,7 +16,7 @@ cd build || {
 }
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS=-print-prog-name=ld -DCMAKE_CXX_FLAGS="-fuse-ld=mold" ..
 
-make "-j$(nproc)"
+make -j$(($(nproc) - 1))
 cd ../bin/ || exit
 if [ -f "simulation_bin" ]; then
   echo "Запуск simulation_bin..."

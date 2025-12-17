@@ -1,5 +1,4 @@
 #pragma once
-#include "raylib.h"
 #include <iostream>
 
 namespace MyMath {
@@ -19,12 +18,12 @@ struct Vector3 {
     z = other.z;
     return *this;
   }
-  operator ::Vector3() const {
-    ::Vector3 v = {static_cast<float>(x), static_cast<float>(y),
-                   static_cast<float>(z)};
-    return v;
-  }
-  Vector3(const ::Vector3 &v) : x(v.x), y(v.y), z(v.z) {}
+  // operator ::Vector3() const {
+  //   ::Vector3 v = {static_cast<float>(x), static_cast<float>(y),
+  //                  static_cast<float>(z)};
+  //   return v;
+  // }
+  // Vector3(const ::Vector3 &v) : x(v.x), y(v.y), z(v.z) {}
 };
 
 // Перегрузка оператора сложения для удобства

@@ -14,5 +14,5 @@ public:
 private:
   Ctx ctx;
   PhysicsEngine PE;
-  GfxEngine gfx;
+  gfx::GfxEngine gfx;
 };

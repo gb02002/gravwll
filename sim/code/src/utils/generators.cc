@@ -2,7 +2,6 @@
 #include "core/bodies/particles.h"
 #include "utils/namespaces/MyMath.h"
 #include <random>
-#include <raylib.h>
 #include <vector>
 
 using namespace error;
