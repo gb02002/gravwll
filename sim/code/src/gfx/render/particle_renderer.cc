@@ -2,6 +2,7 @@
 #include "gfx/core/input.h"
 #include "gfx/renderer/uniform_data.h"
 #include "gfx/vulkan_core/commands.h"
+#include "gfx/vulkan_core/device.h"
 #include "gfx/vulkan_core/pipeline.h"
 #include "gfx/vulkan_core/swapchain.h"
 #include "utils/namespaces/error_namespace.h"
@@ -37,8 +38,12 @@ error::Result<bool> ParticleRenderer::init() {
     debug::debug_print("Initializing ParticleRenderer");
 
     // 1. Создаем Vulkan core
-    vulkan_core_ =
-        vulkan_core::create_vulkan_core(window_.window_name, window_).unwrap();
+    if (auto e = vulkan_core::create_vulkan_core(window_.window_name, window_);
+        e.is_error()) {
+      return error::Result<bool>::error(-1, e.error_message());
+    } else {
+      vulkan_core_ = e.unwrap();
+    }
 
     // 2. Инициализация свопчейна
     if (auto e = vulkan_core::init_swapchain(vulkan_core_, window_);

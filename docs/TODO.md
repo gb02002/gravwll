@@ -22,12 +22,15 @@
 
 - [x] bring semi-final shaders
 - [x] port static camera to mvp-camera keeping same position
-- [ ] make camera movable
+- [x] make camera movable
 
 - [x] shaders-path to root-folder
 
-> Connect tree and vertex buffer
+##### Connect tree and vertex buffer
 
-- [ ] idk
+- [ ] start simple
+- [ ] add AROctree.get_particles_for_render(params_for_culling) method
+
+Add stage buffering only when needed. This is complex, especially with LOD
 
 ##### Physics
