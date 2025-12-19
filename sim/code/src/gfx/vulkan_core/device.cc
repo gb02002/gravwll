@@ -1,7 +1,9 @@
 #include "SDL3/SDL_vulkan.h"
 #include "gfx/vulkan_core/utils.h"
 #include "utils/namespaces/error_namespace.h"
+#include <cstdint>
 #include <gfx/vulkan_core/device.h>
+#include <stdexcept>
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_wayland.h>
 
@@ -126,6 +128,28 @@ error::CResult<VulkanCore> create_vulkan_core(const char *appName,
     debug::debug_print("Error in create_vulkan_core: {}", e.what());
     return error::CResult<VulkanCore>::error(1, e.what());
   }
+}
+
+inline void *map_memory(VulkanCore &core, vk::raii::DeviceMemory &memory,
+                        vk::DeviceSize size, vk::DeviceSize offset = 0) {
+  vk::MemoryMapInfo map_info{};
+  map_info.memory = *memory;
+  map_info.offset = offset;
+  map_info.size = size;
+  map_info.flags = vk::MemoryMapFlags{};
+
+  uint8_t *map_result =
+      static_cast<uint8_t *>(core.device.mapMemory2(map_info));
+  if (!map_result) {
+    throw std::runtime_error("Can't map memory");
+  }
+  return map_result;
+}
+
+inline void unmap_memory(VulkanCore &core, vk::raii::DeviceMemory &memory) {
+  vk::MemoryUnmapInfo unmap_info{};
+  unmap_info.memory = *memory;
+  core.device.unmapMemory2(unmap_info);
 }
 
 void VulkanCore::clean_up() {

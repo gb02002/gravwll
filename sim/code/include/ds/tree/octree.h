@@ -1,5 +1,6 @@
 #pragma once
 #include "ds/storage/storage.h"
+#include "gfx/renderer/scene.h"
 #include <array>
 #include <memory>
 #include <mutex>
@@ -56,6 +57,7 @@ public:
   void insert_batch(const std::vector<Particle> &dataSet);
   void print();
   AROctreeNode *get_root();
+  std::vector<gfx::renderer::SceneParticle> &get_particles_for_render();
 
 private:
   std::unique_ptr<AROctreeNode> root;

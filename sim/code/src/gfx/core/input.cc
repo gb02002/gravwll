@@ -69,6 +69,12 @@ void InputManager::handle_sdl_event_(const SDL_Event &event) {
   switch (event.type) {
   case SDL_EVENT_QUIT:
     current_state_.quit_requested = true;
+    std::cout << "We requested exit! SDL_EVENT_QUIT pressed" << std::endl;
+    break;
+
+  case SDL_SCANCODE_ESCAPE:
+    current_state_.quit_requested = true;
+    std::cout << "We requested exit! SDL_SCANCODE_ESCAPE pressed" << std::endl;
     break;
 
   case SDL_EVENT_KEY_DOWN:

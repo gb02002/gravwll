@@ -19,6 +19,7 @@ public:
 
 private:
   void tick_(float delta_time);
+  void update_scene_from_tree();
 
   GfxCtx &g_ctx_;            // gfx context
   SimulationState &s_state_; // shared state

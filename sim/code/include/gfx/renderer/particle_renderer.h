@@ -7,6 +7,7 @@
 #include "gfx/window.h"
 #include "scene.h"
 #include "utils/namespaces/error_namespace.h"
+#include <cstddef>
 
 namespace gfx::renderer {
 
@@ -38,17 +39,23 @@ public:
 private:
   error::Result<bool> update_uniform_buffers(float delta_time);
 
+  error::Result<bool> update_vertex_buffer_from_scene();
+  error::Result<bool> init_vertex_buffer(size_t initial_capacity);
+  error::Result<bool>
+  update_vertex_buffer(const std::vector<vulkan_core::Vertex> &vertices);
   error::Result<bool> acquire_swapchain_image(vulkan_core::Frame &frame,
                                               uint32_t &image_index);
   error::Result<bool> submit_commands(vulkan_core::Frame &frame);
   error::Result<bool> present_frame(vulkan_core::Frame &frame,
                                     uint32_t image_index);
+  error::Result<bool> recreate_vertex_buffer(size_t new_capacity);
 
   window::MyWindow &window_;
   core::InputManager input_manager_;
   Scene scene_;
   CameraController camera_controller_;
 
+  size_t vertex_buffer_capacity_{0};
   vulkan_core::VulkanCore vulkan_core_;
 
   float total_time_ = 0.0f;

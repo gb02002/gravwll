@@ -85,7 +85,6 @@ struct SwapChainSupportDetails {
 constexpr uint32_t IN_FLIGHT_FRAME_COUNT{3};
 
 struct Frame {
-  // WARN: Is it okay we use CommandBuffers?
   vk::raii::CommandBuffer commandBuffer{nullptr};
   vk::raii::Semaphore imageAvailableSemaphore{nullptr};
   vk::raii::Semaphore renderFinishedSemaphore{nullptr};

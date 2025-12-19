@@ -1,6 +1,8 @@
+#include <algorithm>
 #define CURRENT_MODULE_DEBUG 0
-#include "ds/tree/octree.h"
 #include "ds/storage/storage.h"
+#include "ds/tree/octree.h"
+#include "gfx/renderer/scene.h"
 #include "utils/namespaces/MyMath.h"
 #include "utils/namespaces/error_namespace.h"
 #include <array>
@@ -173,4 +175,26 @@ void AROctreeNode::printOctreeMasses() {
       this->children[i]->printOctreeMasses();
     }
   }
+}
+
+// WARN: We leak Scne objects here. Convertions must be handled on gfx side
+std::vector<gfx::renderer::SceneParticle> &
+AROctree::get_particles_for_render() {
+  // std::vector<gfx::renderer::SceneParticle> vals{};
+  static std::vector<gfx::renderer::SceneParticle> vals{};
+  vals.resize(10000);
+  gfx::renderer::SceneParticle e{};
+  std::fill(vals.begin(), vals.end(), e);
+  for (int i = 0; i < 10000; ++i) {
+    vals[i] = {.position =
+                   glm::vec3((rand() / (float)RAND_MAX - 0.5f) * 100.0f,
+                             (rand() / (float)RAND_MAX - 0.5f) * 100.0f,
+                             (rand() / (float)RAND_MAX - 0.5f) * 100.0f),
+               .mass = 1.0f + (rand() / (float)RAND_MAX) * 10.0f,
+               .visual_id =
+                   gfx::renderer::make_visual_id(rand() % 3, 0, 0, 0, 0, 0, 0)};
+  }
+  std::cout << "We give some vals, size is " << vals.size() << std::endl;
+
+  return vals;
 }

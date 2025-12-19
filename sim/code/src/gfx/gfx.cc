@@ -40,6 +40,8 @@ void GfxEngine::run() {
       break;
     }
 
+    update_scene_from_tree();
+
     auto current_time = std::chrono::high_resolution_clock::now();
     float delta_time =
         std::chrono::duration<float>(current_time - last_time).count();
@@ -57,6 +59,11 @@ void GfxEngine::run() {
   std::cout << "Exited GfxEngine::run(). Frame counter = " << total_frames
             << std::endl;
 };
+
+void GfxEngine::update_scene_from_tree() {
+  auto particles = tree_.get_particles_for_render();
+  render_->get_particle_renderer()->get_scene().set_particles(particles);
+}
 
 // TODO: figure out if we need separate clean_up or raii|destructors can handle
 // it

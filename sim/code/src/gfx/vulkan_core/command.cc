@@ -1,9 +1,11 @@
 #include "gfx/renderer/uniform_data.h"
+#include "gfx/vulkan_core/device.h"
 #include "gfx/vulkan_core/types.h"
 #include "utils/namespaces/error_namespace.h"
 #include "vulkan/vulkan.hpp"
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 
@@ -200,111 +202,36 @@ error::Result<bool> create_descriptor_pool_and_sets(VulkanCore &core) {
   }
 }
 
-error::Result<bool> create_vertex_buffer(VulkanCore &core) {
-  std::cout << "Vertex struct size: " << sizeof(Vertex) << ", "
-            << "offset of pos: " << offsetof(Vertex, position)
-            << "offset of size: " << offsetof(Vertex, mass) << "\n";
-  try {
-    std::vector<Vertex> vertices{};
+vk::raii::CommandBuffer begin_single_time_commands(VulkanCore &core) {
+  vk::CommandBufferAllocateInfo alloc_info{};
+  alloc_info.level = vk::CommandBufferLevel::ePrimary;
+  alloc_info.commandPool = *core.commandPool;
+  alloc_info.commandBufferCount = 1;
 
-    // Пример заполнения тестовыми данными
-    // В реальном коде здесь будет заполнение из ваших частиц
-    for (size_t i = 0; i < 1000; ++i) {
-      Vertex vertex{};
-      vertex.position = glm::vec3((rand() / (float)RAND_MAX - 0.5f) * 100.0f,
-                                  (rand() / (float)RAND_MAX - 0.5f) * 100.0f,
-                                  (rand() / (float)RAND_MAX - 0.5f) * 100.0f);
-      vertex.mass = 1.0f + (rand() / (float)RAND_MAX) * 100.0f;
+  auto command_buffers = core.device.allocateCommandBuffers(alloc_info);
+  vk::raii::CommandBuffer command_buffer = std::move(command_buffers[0]);
 
-      // Создаем тестовый VisualID
-      // В реальном коде это будет браться из ваших частиц
-      uint8_t category = rand() % 7; // 0-6
-      uint8_t subtype = rand() % 6;  // 0-5
-      uint8_t shader = 0;            // базовый шейдер
-      uint8_t texture = 0;           // без текстуры
-      uint8_t lod = 0;               // базовый LOD
-      uint16_t sim_mode = 0;         // стандартный режим
-      uint16_t flags = 0;            // без флагов
+  vk::CommandBufferBeginInfo begin_info{};
+  begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+  command_buffer.begin(begin_info);
 
-      VisualID vid = make_visual_id(category, subtype, shader, texture, lod,
-                                    sim_mode, flags);
-
-      // Разбиваем 64-битный ID на две 32-битные части
-      vertex.visual_id_low = static_cast<uint32_t>(vid.bits & 0xFFFFFFFF);
-      vertex.visual_id_high =
-          static_cast<uint32_t>((vid.bits >> 32) & 0xFFFFFFFF);
-
-      vertices.push_back(vertex);
-    }
-    core.particle_count = vertices.size();
-    vk::DeviceSize bufferSize = sizeof(Vertex) * vertices.size();
-
-    // Создаем временный staging буфер
-    vk::raii::Buffer stagingBuffer{nullptr};
-    vk::raii::DeviceMemory stagingBufferMemory{nullptr};
-
-    create_buffer(core, bufferSize, vk::BufferUsageFlagBits::eTransferSrc,
-                  vk::MemoryPropertyFlagBits::eHostVisible |
-                      vk::MemoryPropertyFlagBits::eHostCoherent,
-                  stagingBuffer, stagingBufferMemory);
-
-    vk::MemoryMapInfo mapInfo{};
-    mapInfo.memory = *stagingBufferMemory;
-    mapInfo.offset = 0;
-    mapInfo.size = bufferSize;
-    mapInfo.flags = vk::MemoryMapFlags();
-
-    void *data = core.device.mapMemory2(mapInfo);
-    memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-
-    // WARNING: same here
-    vk::MemoryUnmapInfo unmapInfo{};
-    unmapInfo.memory = *stagingBufferMemory;
-    core.device.unmapMemory2(unmapInfo);
-
-    // Создаем конечный vertex буфер
-    create_buffer(core, bufferSize,
-                  vk::BufferUsageFlagBits::eVertexBuffer |
-                      vk::BufferUsageFlagBits::eTransferDst,
-                  vk::MemoryPropertyFlagBits::eDeviceLocal, core.vertex_buffer,
-                  core.vertex_buffer_memory);
-
-    // Копируем из временного в конечный буфер
-    vk::CommandBufferAllocateInfo allocInfo{};
-    allocInfo.level = vk::CommandBufferLevel::ePrimary;
-    allocInfo.commandPool = *core.commandPool;
-    allocInfo.commandBufferCount = 1;
-
-    auto commandBuffers = core.device.allocateCommandBuffers(allocInfo);
-    vk::raii::CommandBuffer commandBuffer = std::move(commandBuffers[0]);
-
-    vk::CommandBufferBeginInfo beginInfo{};
-    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-    commandBuffer.begin(beginInfo);
-
-    vk::BufferCopy copyRegion{};
-    copyRegion.srcOffset = 0;
-    copyRegion.dstOffset = 0;
-    copyRegion.size = bufferSize;
-    commandBuffer.copyBuffer(*stagingBuffer, *core.vertex_buffer, copyRegion);
-
-    commandBuffer.end();
-
-    vk::SubmitInfo submitInfo{};
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &*commandBuffer;
-
-    core.graphicsQueue.submit(submitInfo, nullptr);
-    core.graphicsQueue.waitIdle();
-
-    debug::debug_print("Created vertex buffer with {} vertices",
-                       core.particle_count);
-    return error::Result<bool>::success(true);
-
-  } catch (const vk::SystemError &e) {
-    debug::debug_print("Failed to create vertex buffer: {}", e.what());
-    return error::Result<bool>::error(-1, "Failed to create vertex buffer");
-  }
+  return command_buffer;
 }
+
+void end_single_time_commands(VulkanCore &core,
+                              vk::raii::CommandBuffer &command_buffer) {
+  command_buffer.end();
+
+  vk::SubmitInfo submit_info{};
+  submit_info.commandBufferCount = 1;
+  submit_info.pCommandBuffers = &*command_buffer;
+
+  core.graphicsQueue.submit(submit_info, nullptr);
+  core.graphicsQueue.waitIdle();
+}
+
+// error::Result<bool> recreate_vertex_buffer(VulkanCore &core) {
+//
+// }
 
 } // namespace vulkan_core

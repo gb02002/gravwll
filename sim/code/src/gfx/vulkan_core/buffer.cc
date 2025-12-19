@@ -42,6 +42,7 @@ void create_buffer(VulkanCore &core, vk::DeviceSize size,
   buffer_memory = vk::raii::DeviceMemory(core.device, alloc_info);
   buffer.bindMemory(*buffer_memory, 0);
 }
+
 void copy_to_buffer(VulkanCore &core, vk::raii::DeviceMemory &dstMemory,
                     const void *data, vk::DeviceSize size) {
   vk::MemoryMapInfo mapInfo{};

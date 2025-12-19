@@ -27,6 +27,7 @@ struct VulkanCore {
   vk::raii::PipelineLayout pipeline_layout{nullptr};
   vk::raii::Buffer vertex_buffer{nullptr};
   vk::raii::DeviceMemory vertex_buffer_memory{nullptr};
+  void *vertex_buffer_mapped = nullptr;
 
   vk::raii::SwapchainKHR swapchain{nullptr}; // Not inited
   std::vector<vk::Image> swapchainImages{};  // Not inited

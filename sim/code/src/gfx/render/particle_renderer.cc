@@ -1,15 +1,19 @@
 #include "gfx/renderer/particle_renderer.h"
 #include "gfx/core/input.h"
 #include "gfx/renderer/uniform_data.h"
+#include "gfx/vulkan_core/buffer.h"
 #include "gfx/vulkan_core/commands.h"
 #include "gfx/vulkan_core/device.h"
 #include "gfx/vulkan_core/pipeline.h"
 #include "gfx/vulkan_core/swapchain.h"
+#include "gfx/vulkan_core/types.h"
 #include "utils/namespaces/error_namespace.h"
+#include "vulkan/vulkan.hpp"
 #include <algorithm>
 #include <cstring>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <string>
+#include <vulkan/vulkan.hpp>
 
 namespace gfx::renderer {
 
@@ -21,6 +25,13 @@ ParticleRenderer::~ParticleRenderer() {
   try {
     if (initialized_) {
       debug::debug_print("Destroying ParticleRenderer");
+
+      if (vulkan_core_.vertex_buffer_mapped) {
+        vk::MemoryUnmapInfo unmap_info{};
+        unmap_info.memory = *vulkan_core_.vertex_buffer_memory;
+        vulkan_core_.device.unmapMemory2(unmap_info);
+        vulkan_core_.vertex_buffer_mapped = nullptr;
+      }
       vulkan_core_.clean_up();
       debug::debug_print("ParticleRenderer destroyed");
     }
@@ -77,7 +88,7 @@ error::Result<bool> ParticleRenderer::init() {
 
     // 8. Создаем вершинный буфер
     debug::debug_print("Creating vertex buffer");
-    if (auto e = vulkan_core::create_vertex_buffer(vulkan_core_); e.is_error())
+    if (auto e = init_vertex_buffer(40000); e.is_error())
       return e;
 
     // 9. Создаем пул дескрипторов и наборы
@@ -153,6 +164,9 @@ error::Result<bool> ParticleRenderer::render_frame() {
     return e;
   }
 
+  if (auto e = update_vertex_buffer_from_scene(); e.is_error())
+    return e;
+
   frame.commandBuffer.reset();
   if (auto e = vulkan_core::record_frame_command_buffer(vulkan_core_, frame,
                                                         image_index);
@@ -171,6 +185,25 @@ error::Result<bool> ParticleRenderer::render_frame() {
   vulkan_core_.frameIndex =
       (vulkan_core_.frameIndex + 1) % vulkan_core::IN_FLIGHT_FRAME_COUNT;
 
+  return error::Result<bool>::success(true);
+}
+
+error::Result<bool> ParticleRenderer::update_vertex_buffer_from_scene() {
+
+  const auto &scene_particles = scene_.get_particles();
+  std::vector<vulkan_core::Vertex> vertices;
+  vertices.reserve(scene_.get_particles_count());
+
+  for (const auto &sp : scene_particles) {
+    vulkan_core::Vertex vertex;
+    vertex.position = sp.position;
+    vertex.mass = sp.mass;
+    vertex.visual_id_low = static_cast<uint32_t>(sp.visual_id & 0xFFFFFFFF);
+    vertex.visual_id_high =
+        static_cast<uint32_t>((sp.visual_id >> 32) & 0xFFFFFFFF);
+    vertices.push_back(vertex);
+  }
+  update_vertex_buffer(vertices);
   return error::Result<bool>::success(true);
 }
 
@@ -262,4 +295,229 @@ error::Result<bool> ParticleRenderer::present_frame(vulkan_core::Frame &frame,
   return error::Result<bool>::success(true);
 }
 
+error::Result<bool>
+ParticleRenderer::recreate_vertex_buffer(size_t new_capacity) {
+  try {
+    vulkan_core_.particle_count = scene_.get_particles_count();
+    vk::DeviceSize bufferSize =
+        sizeof(vulkan_core::Vertex) * vulkan_core_.particle_count;
+
+    // Создаем временный staging буфер
+    vk::raii::Buffer stagingBuffer{nullptr};
+    vk::raii::DeviceMemory stagingBufferMemory{nullptr};
+
+    create_buffer(vulkan_core_, bufferSize,
+                  vk::BufferUsageFlagBits::eTransferSrc,
+                  vk::MemoryPropertyFlagBits::eHostVisible |
+                      vk::MemoryPropertyFlagBits::eHostCoherent,
+                  stagingBuffer, stagingBufferMemory);
+
+    // Маппим staging буфер
+    vk::MemoryMapInfo map_info{};
+    map_info.memory = *stagingBufferMemory;
+    map_info.offset = 0;
+    map_info.size = bufferSize;
+    map_info.flags = vk::MemoryMapFlags{};
+
+    auto map_result = vulkan_core_.device.mapMemory2(map_info);
+    if (!map_result) {
+      return error::Result<bool>::error(-1, "Failed to map staging buffer");
+    }
+
+    void *data = map_result;
+    memcpy(data, scene_.get_particles().data(),
+           static_cast<size_t>(bufferSize));
+
+    // Анмаппим
+    vk::MemoryUnmapInfo unmap_info{};
+    unmap_info.memory = *stagingBufferMemory;
+    vulkan_core_.device.unmapMemory2(unmap_info);
+
+    // Создаем конечный vertex буфер
+    create_buffer(vulkan_core_, bufferSize,
+                  vk::BufferUsageFlagBits::eVertexBuffer |
+                      vk::BufferUsageFlagBits::eTransferDst,
+                  vk::MemoryPropertyFlagBits::eDeviceLocal,
+                  vulkan_core_.vertex_buffer,
+                  vulkan_core_.vertex_buffer_memory);
+
+    // Копируем через командный буфер
+    vk::raii::CommandBuffer commandBuffer =
+        begin_single_time_commands(vulkan_core_);
+
+    vk::BufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = bufferSize;
+    commandBuffer.copyBuffer(*stagingBuffer, *vulkan_core_.vertex_buffer,
+                             copyRegion);
+
+    end_single_time_commands(vulkan_core_, commandBuffer);
+
+    debug::debug_print("Created vertex buffer with {} vertices",
+                       vulkan_core_.particle_count);
+    return error::Result<bool>::success(true);
+
+  } catch (const vk::SystemError &e) {
+    return error::Result<bool>::error(
+        -1, std::string(std::string("Failed to recreate vertex buffer: ") +
+                        e.what())
+                .c_str());
+  }
+}
+
+error::Result<bool>
+ParticleRenderer::init_vertex_buffer(size_t initial_capacity = 50000) {
+  try {
+    vertex_buffer_capacity_ = initial_capacity;
+    vk::DeviceSize buffer_size =
+        sizeof(vulkan_core::Vertex) * vertex_buffer_capacity_;
+
+    debug::debug_print("Creating vertex buffer with capacity: {} vertices",
+                       vertex_buffer_capacity_);
+
+    vulkan_core::create_buffer(
+        vulkan_core_, buffer_size, vk::BufferUsageFlagBits::eVertexBuffer,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+            vk::MemoryPropertyFlagBits::eHostCoherent,
+        vulkan_core_.vertex_buffer, vulkan_core_.vertex_buffer_memory);
+
+    // Маппим память с использованием новых API
+    vk::MemoryMapInfo map_info{};
+    map_info.memory = *vulkan_core_.vertex_buffer_memory;
+    map_info.offset = 0;
+    map_info.size = buffer_size;
+    map_info.flags = vk::MemoryMapFlags{};
+
+    auto map_result = vulkan_core_.device.mapMemory2(map_info);
+    if (!map_result) {
+      return error::Result<bool>::error(-1,
+                                        "Failed to map vertex buffer memory");
+    }
+
+    vulkan_core_.vertex_buffer_mapped = map_result;
+    vulkan_core_.particle_count = 0;
+
+    debug::debug_print("Vertex buffer initialized with {} bytes capacity",
+                       buffer_size);
+    return error::Result<bool>::success(true);
+
+  } catch (const vk::SystemError &e) {
+    return error::Result<bool>::error(
+        -1,
+        std::string(std::string("Failed to create vertex buffer: ") + e.what())
+            .c_str());
+  }
+}
+
+error::Result<bool> ParticleRenderer::update_vertex_buffer(
+    const std::vector<vulkan_core::Vertex> &vertices) {
+  try {
+    size_t particle_count = vertices.size();
+
+    // 1. Проверяем, нужно ли пересоздавать буфер
+    if (particle_count > vertex_buffer_capacity_) {
+      debug::debug_print("Vertex buffer resize needed: {} > {}", particle_count,
+                         vertex_buffer_capacity_);
+
+      size_t new_capacity = particle_count * 2;
+      if (auto e = recreate_vertex_buffer(new_capacity); e.is_error()) {
+        return e;
+      }
+    }
+
+    // 2. Копируем данные в маппленную память
+    if (vulkan_core_.vertex_buffer_mapped && particle_count > 0) {
+      size_t data_size = sizeof(vulkan_core::Vertex) * particle_count;
+      memcpy(vulkan_core_.vertex_buffer_mapped, vertices.data(), data_size);
+
+      // Если нужно было бы флашить (но у нас HOST_COHERENT):
+      // vk::MappedMemoryRange range{};
+      // range.memory = *vulkan_core_.vertex_buffer_memory;
+      // range.offset = 0;
+      // range.size = VK_WHOLE_SIZE;
+      // vulkan_core_.device.flushMappedMemoryRanges(range);
+    }
+
+    // 3. Обновляем количество частиц для рендеринга
+    vulkan_core_.particle_count = particle_count;
+
+    return error::Result<bool>::success(true);
+
+  } catch (const std::exception &e) {
+    return error::Result<bool>::error(
+        -1,
+        std::string(std::string("Failed to update vertex buffer: ") + e.what())
+            .c_str());
+  }
+}
+
+// Или если нужно через staging буфер (альтернативный вариант):
+// error::Result<bool> ParticleRenderer::copy_to_vertex_buffer_via_staging(
+//     const std::vector<vulkan_core::Vertex> &vertices) {
+//   try {
+//     size_t particle_count = vertices.size();
+//     vk::DeviceSize buffer_size = sizeof(vulkan_core::Vertex) *
+//     particle_count;
+//
+//     // Проверяем capacity
+//     if (particle_count > vertex_buffer_capacity_) {
+//       if (auto e = recreate_vertex_buffer(particle_count * 2); e.is_error())
+//       {
+//         return e;
+//       }
+//     }
+//
+//     // 1. Создаем staging буфер
+//     vk::raii::Buffer staging_buffer{nullptr};
+//     vk::raii::DeviceMemory staging_memory{nullptr};
+//
+//     vulkan_core::create_buffer(vulkan_core_, buffer_size,
+//                                vk::BufferUsageFlagBits::eTransferSrc,
+//                                vk::MemoryPropertyFlagBits::eHostVisible |
+//                                    vk::MemoryPropertyFlagBits::eHostCoherent,
+//                                staging_buffer, staging_memory);
+//
+//     // 2. Копируем данные в staging буфер
+//     vk::MemoryMapInfo map_info{};
+//     map_info.memory = *staging_memory;
+//     map_info.offset = 0;
+//     map_info.size = buffer_size;
+//     map_info.flags = vk::MemoryMapFlags();
+//
+//     auto map_result = vulkan_core_.device.mapMemory2(map_info);
+//     if (map_result.result != vk::Result::eSuccess) {
+//       return error::Result<bool>::error(-1, "Failed to map staging buffer");
+//     }
+//
+//     memcpy(map_result.value, vertices.data(), buffer_size);
+//
+//     vk::MemoryUnmapInfo unmap_info{};
+//     unmap_info.memory = *staging_memory;
+//     vulkan_core_.device.unmapMemory2(unmap_info);
+//
+//     // 3. Копируем через командный буфер
+//     vk::raii::CommandBuffer cmd = begin_single_time_commands();
+//
+//     vk::BufferCopy copy_region{};
+//     copy_region.srcOffset = 0;
+//     copy_region.dstOffset = 0;
+//     copy_region.size = buffer_size;
+//
+//     cmd.copyBuffer(*staging_buffer, *vulkan_core_.vertex_buffer,
+//     copy_region);
+//
+//     end_single_time_commands(cmd);
+//
+//     // 4. Обновляем количество частиц
+//     vulkan_core_.particle_count = particle_count;
+//
+//     return error::Result<bool>::success(true);
+//
+//   } catch (const vk::SystemError &e) {
+//     return error::Result<bool>::error(
+//         -1, std::string("Failed to copy to vertex buffer via staging: ") +
+//                 e.what());
+//   }
+// }
 } // namespace gfx::renderer
