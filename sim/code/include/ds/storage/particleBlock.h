@@ -2,6 +2,7 @@
 #include "core/bodies/particles.h"
 #include "utils/namespaces/error_namespace.h"
 #include <array>
+#include <cstdint>
 #include <mutex>
 #include <vector>
 
@@ -39,6 +40,7 @@ public:
     alignas(16) std::array<double, N> ay;
     alignas(16) std::array<double, N> az;
     alignas(16) std::array<double, N> mass;
+    alignas(16) std::array<uint64_t, N> visual_id;
 
     int size = 0;
 

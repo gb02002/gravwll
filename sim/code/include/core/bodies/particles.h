@@ -1,8 +1,14 @@
 #pragma once
 #include "utils/namespaces/MyMath.h"
+#include <cstdint>
 
 class Particle {
 public:
+  Particle(double x, double y, double z, double vx, double vy, double vz,
+           double mass, uint64_t visual_id)
+      : x(x), y(y), z(z), vx(vx), vy(vy), vz(vz), fx(0), fy(0), fz(0), ax(0),
+        ay(0), az(0), mass((mass > 0) ? mass : -mass), visual_id(visual_id) {}
+
   Particle(double x, double y, double z, double vx, double vy, double vz,
            double mass)
       : x(x), y(y), z(z), vx(vx), vy(vy), vz(vz), fx(0), fy(0), fz(0), ax(0),
@@ -62,6 +68,7 @@ private:
   double fx, fy, fz;
   double ax, ay, az;
   double mass;
+  uint64_t visual_id;
 };
 inline std::ostream &operator<<(std::ostream &out, Particle const &p);
 

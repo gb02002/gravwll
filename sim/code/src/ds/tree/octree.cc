@@ -1,7 +1,6 @@
-#include <algorithm>
 #define CURRENT_MODULE_DEBUG 0
-#include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
+#include "ds/storage/storage.h"
 #include "gfx/renderer/scene.h"
 #include "utils/namespaces/MyMath.h"
 #include "utils/namespaces/error_namespace.h"
@@ -177,24 +176,92 @@ void AROctreeNode::printOctreeMasses() {
   }
 }
 
-// WARN: We leak Scne objects here. Convertions must be handled on gfx side
-std::vector<gfx::renderer::SceneParticle> &
-AROctree::get_particles_for_render() {
-  // std::vector<gfx::renderer::SceneParticle> vals{};
-  static std::vector<gfx::renderer::SceneParticle> vals{};
-  vals.resize(10000);
-  gfx::renderer::SceneParticle e{};
-  std::fill(vals.begin(), vals.end(), e);
-  for (int i = 0; i < 10000; ++i) {
-    vals[i] = {.position =
-                   glm::vec3((rand() / (float)RAND_MAX - 0.5f) * 100.0f,
-                             (rand() / (float)RAND_MAX - 0.5f) * 100.0f,
-                             (rand() / (float)RAND_MAX - 0.5f) * 100.0f),
-               .mass = 1.0f + (rand() / (float)RAND_MAX) * 10.0f,
-               .visual_id =
-                   gfx::renderer::make_visual_id(rand() % 3, 0, 0, 0, 0, 0, 0)};
-  }
-  std::cout << "We give some vals, size is " << vals.size() << std::endl;
+namespace {
+struct TraversalStackFrame {
+  AROctreeNode *node;
+  int depth;
+};
 
-  return vals;
+inline glm::vec3 transform_simulation_to_gfx(double x, double y, double z) {
+  const double scale = 1000;
+  return glm::vec3(x * scale, y * scale, z * scale);
+}
+
+} // namespace
+
+std::vector<gfx::renderer::SceneParticle> AROctree::get_particles_for_render() {
+  std::vector<gfx::renderer::SceneParticle> result;
+  if (!root)
+    return result;
+
+  result.reserve(100000);
+
+  std::vector<TraversalStackFrame> stack;
+  stack.reserve(15);
+
+  stack.push_back({root.get(), 0});
+
+  while (!stack.empty()) {
+    TraversalStackFrame frame = stack.back();
+    stack.pop_back();
+
+    AROctreeNode *node = frame.node;
+    if (!node)
+      continue;
+
+    std::unique_lock<std::mutex> lock(node->getMutex(), std::try_to_lock);
+    if (!lock.owns_lock()) {
+      continue;
+    }
+
+    if (node->localBlock && node->localBlock->data_block.size > 0) {
+      auto &block = node->localBlock->data_block;
+
+      for (int i = 0; i < block.size; ++i) {
+        if (i >= ParticleBlock::N)
+          break;
+
+        gfx::renderer::SceneParticle particle;
+
+        particle.position =
+            transform_simulation_to_gfx(block.x[i], block.y[i], block.z[i]);
+
+        particle.mass = static_cast<float>(block.mass[i]);
+
+        particle.visual_id = block.visual_id[i];
+
+        result.push_back(particle);
+      }
+    }
+
+    lock.unlock();
+
+    for (int i = 0; i < 8; ++i) {
+      if (node->children[i]) {
+        stack.push_back({node->children[i], frame.depth + 1});
+      }
+    }
+  }
+
+  const size_t max_particles_for_render = 1000000;
+
+  if (result.size() > max_particles_for_render) {
+    debug::debug_print("Applying LOD: reducing particles from {} to {}",
+                       result.size(), max_particles_for_render);
+
+    // Простой прореживание - берем каждый n-ый элемент
+    std::vector<gfx::renderer::SceneParticle> sampled;
+    sampled.reserve(max_particles_for_render);
+
+    size_t step = result.size() / max_particles_for_render;
+    for (size_t i = 0;
+         i < result.size() && sampled.size() < max_particles_for_render;
+         i += step) {
+      sampled.push_back(result[i]);
+    }
+
+    result.swap(sampled);
+  }
+
+  return result;
 }

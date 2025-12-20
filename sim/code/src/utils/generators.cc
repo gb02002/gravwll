@@ -1,5 +1,6 @@
 #include "utils/generators.h"
 #include "core/bodies/particles.h"
+#include "gfx/renderer/scene.h"
 #include "utils/namespaces/MyMath.h"
 #include <random>
 #include <vector>
@@ -153,10 +154,12 @@ CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
   std::uniform_real_distribution<double> dist_x(box.min.x, box.max.x);
   std::uniform_real_distribution<double> dist_y(box.min.y, box.max.y);
   std::uniform_real_distribution<double> dist_z(box.min.z, box.max.z);
+  std::uniform_real_distribution<double> mass(1, 2e30);
 
   for (size_t i = 0; i < n; ++i) {
     particles.push_back(
-        Particle{dist_x(rng), dist_y(rng), dist_z(rng), 0, 0, 0, 1.0});
+        Particle{dist_x(rng), dist_y(rng), dist_z(rng), 0, 0, 0, mass(rng),
+                 gfx::renderer::make_visual_id(i % 3, i % 6, 0, 0, 0, 0, 0)});
   }
 
   return CResult<std::vector<Particle>>::success(std::move(particles));
