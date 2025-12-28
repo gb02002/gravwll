@@ -1,27 +1,16 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env zsh
+set -euo pipefail
 
-# Must read how to check if proj needs rebuild
-# rm bin/simulation_bin
-if [ ! -d "build" ]; then
-  mkdir build || {
-    echo "Couldn't create build folder"
-    exit 1
-  }
-fi
+BUILD_DIR=build
+BUILD_TYPE=RelWithDebInfo
 
-cd build || {
-  echo "Couldn't enter build folder"
-  exit 1
-}
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS=-print-prog-name=ld -DCMAKE_CXX_FLAGS="-fuse-ld=mold" ..
+cmake -S . -B ${BUILD_DIR} \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_LINKER_TYPE=MOLD
 
-make -j$(($(nproc) - 1))
-cd ../bin/ || exit
-if [ -f "simulation_bin" ]; then
-  echo "Запуск simulation_bin..."
+cmake --build ${BUILD_DIR} --parallel
+cmake --install ${BUILD_DIR}
 
-  ./simulation_bin
-else
-  echo "Исполняемый файл simulation_bin не найден."
-fi
+exec ${BUILD_DIR}/bin/simulation_bin

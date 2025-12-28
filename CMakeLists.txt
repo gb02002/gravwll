@@ -1,11 +1,24 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.25)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDART_REQUIRED True)
 set(gravwll_root ${CMAKE_SOURCE_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${gravwll_root}/bin)
+include(GNUInstallDirs)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+          ${CMAKE_BINARY_DIR}/compile_commands.json
+          ${CMAKE_SOURCE_DIR}/compile_commands.json
+)
+
+add_custom_target(distclean
+  COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}
+)
+
 project(gravwll)
 
 include(${gravwll_root}/cmake/options.cmake)
+include(${gravwll_root}/cmake/warnings.cmake)
 include(${gravwll_root}/cmake/dependencies.cmake)
 
 if(ENABLE_TESTS)

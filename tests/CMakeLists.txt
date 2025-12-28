@@ -11,6 +11,7 @@ add_executable(gravwll_unittests
 
     unittests/physics/pairwise.cpp
 )
+target_link_libraries(gravwll_unittests PRIVATE gravwll_warnings)
 
 target_include_directories(gravwll_unittests PRIVATE ${gravwll_headers})
 

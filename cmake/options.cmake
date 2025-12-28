@@ -33,3 +33,18 @@ set(GRAVWLL_SHADER_DIR_PATH "${gravwll_shaders_dir}")
 message(STATUS "This is is GRAVWLL_CONFIG_DIR_PATH: ${GRAVWLL_CONFIG_DIR_PATH}")
 message(STATUS "This is is GRAVWLL_SHADER_DIR_PATH: ${GRAVWLL_SHADER_DIR_PATH}")
 include_directories(${CMAKE_BINARY_DIR})
+
+#======BUILD_TYPES=======#
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "" FORCE)
+endif()
+
+#======CACHE=======#
+
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
+

@@ -1,25 +1,15 @@
-#!/bin/sh
+#!/usr/bin/env zsh
+set -euo pipefail
 
-if [ ! -d "build" ]; then
-  mkdir build || {
-    echo "Couldn't create build folder"
-    exit 1
-  }
-fi
+BUILD_DIR=build
+BUILD_TYPE=RelWithDebInfo
 
-cd build || {
-  echo "Couldn't enter build folder"
-  exit 1
-}
+cmake -S . -B ${BUILD_DIR} \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_LINKER_TYPE=MOLD
 
-cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake --build ${BUILD_DIR} --parallel
 
-make "-j$(nproc)"
-cd ../bin/ || exit
-if [ -f "simulation_bin" ]; then
-  echo "Запуск simulation_bin..."
-
-  gdb ./simulation_bin
-else
-  echo "Исполняемый файл simulation_bin не найден."
-fi
+exec gdb ${BUILD_DIR}/bin/simulation_bin

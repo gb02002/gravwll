@@ -18,6 +18,8 @@ file(GLOB_RECURSE gravwll_headers CONFIGURE_DEPENDS
 
 add_library(${PROJECT_NAME}
   ${gravwll_sources} ${gravwll_sources1} ${gravwll_headers})
+target_link_libraries(${PROJECT_NAME} PRIVATE gravwll_warnings)
+
 add_library(gravwll::simulation ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC
   ${gravwll_source_code_dir}/include)
@@ -32,12 +34,20 @@ target_include_directories(simulation PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/code/include
 )
 add_executable(simulation_bin ${gravwll_source_code_dir}/main.cc)
+# target_link_libraries(simulation_bin PRIVATE gravwll_warnings)
 
 target_include_directories(simulation_bin PRIVATE
 ${gravwll_source_code_dir}/include)
-target_link_libraries(simulation_bin PRIVATE gravwll::simulation)
-target_link_libraries(
-  simulation_bin PRIVATE
-  gravwll::simulation gravwll_vulkan_dependencies
-)
+# target_link_libraries(simulation_bin PRIVATE gravwll::simulation)
+# target_link_libraries(
+#   simulation_bin PRIVATE
+#   gravwll::simulation gravwll_vulkan_dependencies
+# )
+target_link_libraries(simulation_bin PRIVATE gravwll_vulkan_dependencies)
+target_link_libraries(simulation PRIVATE gravwll_warnings)
+target_link_libraries(simulation_bin PRIVATE gravwll_warnings)
+
 target_include_directories(simulation_bin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+install(TARGETS simulation_bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
