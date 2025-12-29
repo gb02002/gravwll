@@ -1,4 +1,5 @@
 #pragma once
+#include "core/bodies/particles.h"
 #include "ds/storage/storage.h"
 #include "simulation_config.h"
 #include "simulation_state.h"
@@ -37,7 +38,7 @@ struct PhysicsCtx {
                       .tree_max_depth = config.kTreeMaxDepth,
                       .debug = config.kDebug};
   }
-  const unsigned short tree_depth() const { return tree_max_depth; }
+  unsigned short tree_depth() const { return tree_max_depth; }
 };
 
 // Контекст для данных
@@ -51,9 +52,12 @@ struct DataCtx {
   // {4.0, 4.0, 2.0}};
 
   static DataCtx from_config(const SimulationConfig &config) {
-    return DataCtx{.population_mode = config.data_population_mode,
-                   .body_count = static_cast<size_t>(config.kNBodies),
-                   .random_seed = config.random_seed};
+    return DataCtx{
+        .initial_dataset = {},
+        .population_mode = config.data_population_mode,
+        .body_count = static_cast<size_t>(config.kNBodies),
+        .random_seed = config.random_seed,
+    };
   }
   const std::vector<Particle> access_dataset() { return initial_dataset; }
 };

@@ -1,6 +1,7 @@
 #include "ds/storage/storage.h"
 #include "ds/storage/particleBlock.h"
 #include <chrono>
+#include <cstddef>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -23,7 +24,7 @@ void Storage::release_block(ParticleBlock *block) {
 }
 
 void Storage::transferParticle(ParticleBlock *fromBlock, ParticleBlock *toBlock,
-                               int index) {
+                               size_t index) {
   std::cout << "TransferParticle: fromBlock = " << fromBlock
             << ", toBlock = " << toBlock << "\n";
   auto &mutex1 = fromBlock->get_mutex();

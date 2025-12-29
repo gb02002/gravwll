@@ -50,8 +50,8 @@ error::Result<bool> CameraController::update(float delta_time) {
     }
 
     process_keyboard_(delta_time);
-    process_mouse_(delta_time);
-    process_mouse_wheel_(delta_time);
+    process_mouse_();
+    process_mouse_wheel_();
 
     return error::Result<bool>::success(true);
   } catch (const std::exception &e) {
@@ -97,7 +97,7 @@ void CameraController::process_keyboard_(float delta_time) {
   }
 }
 
-void CameraController::process_mouse_(float delta_time) {
+void CameraController::process_mouse_() {
   if (!input_.is_mouse_captured()) {
     return;
   }
@@ -120,7 +120,7 @@ void CameraController::process_mouse_(float delta_time) {
   camera_.set_pitch(std::clamp(camera_.get_pitch(), -89.0f, 89.0f));
 }
 
-void CameraController::process_mouse_wheel_(float delta_time) {
+void CameraController::process_mouse_wheel_() {
   const auto &input_state = input_.get_state();
 
   if (input_state.mouse.wheel != 0.0f) {

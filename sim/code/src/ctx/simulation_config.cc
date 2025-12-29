@@ -44,11 +44,11 @@ SimulationConfigBuilder::with_config_file(const std::string &filename) {
 SimulationConfigBuilder &
 SimulationConfigBuilder::with_command_line(int argc, char **argv) {
   auto parsed = cli_parser_.parse(argc, argv);
-  for (auto const &i : parsed.flags)
-    // std::cout << i << "\n";
-    for (auto const &j : parsed.kw_pairs) {
-      // std::cout << j.first << "=" << j.second << std::endl;
-    }
+  // for (auto const &i : parsed.flags)
+  // std::cout << i << "\n";
+  // for (auto const &j : parsed.kw_pairs) {
+  // std::cout << j.first << "=" << j.second << std::endl;
+  // }
   apply_mappings(parsed.kw_pairs);
 
   // Обработка флагов
@@ -69,8 +69,7 @@ SimulationConfig SimulationConfigBuilder::build() {
   return config_;
 }
 
-config::ConfigFileReader::ConfigFileReader(
-    const std::string &config_directory) {};
+config::ConfigFileReader::ConfigFileReader(const std::string &) {};
 
 bool SimulationConfig::process_bools(const std::string &value) {
   std::string tmp_ = value;

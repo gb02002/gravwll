@@ -1,48 +1,51 @@
 #pragma once
 #include "ds/storage/particleBlock.h"
 #include "memory/blocks_arena.h"
+#include <cstddef>
+#include <limits>
 #include <vector>
 
 class BlockMemoryManager {
 public:
-  explicit BlockMemoryManager(uint N_body);
+  explicit BlockMemoryManager(size_t N_body);
   ~BlockMemoryManager() = default;
 
   ParticleBlock *create_block(MortonKey key);
   void destroy_block(ParticleBlock *p_bl);
 
-  ParticleBlock *get_block_data(uint inx);
-  const ParticleBlock *get_block_data(uint inx) const;
-  MortonKey get_block_key(uint inx) const;
+  ParticleBlock *get_block_data(size_t inx);
+  const ParticleBlock *get_block_data(size_t inx) const;
+  MortonKey get_block_key(size_t inx) const;
 
-  void swap_blocks(uint inx_a, uint inx_b);
+  void swap_blocks(size_t inx_a, size_t inx_b);
   void compact();
 
   class Iterator;
   Iterator begin();
   Iterator end();
 
-  uint get_capacity() const { return arena_.capacity; };
-  uint get_used_blocks() const {
+  size_t get_capacity() const { return arena_.capacity; };
+  size_t get_used_blocks() const {
     return arena_.current_counter;
     ;
   }
 
 private:
-  static uint compute_capacity(uint N_body) {
+  static size_t compute_capacity(size_t N_body) {
     // Базовое количество блоков (округление вверх)
-    const uint base_blocks = (N_body + 15) / 16;
+    const size_t base_blocks = (N_body + 15) / 16;
 
     // Эмпирические коэффициенты на основе тестирования октодеревьев:
     // - Множитель 4-6 хорошо работает для средних деревьев
     // - Учитываем что при делении получается 8 новых блоков
     // - Минимальный размер дает место для начального роста
 
-    const uint multiplier = 6;  // эмпирически подобранный множитель
-    const uint min_blocks = 32; // минимум для 2 уровней дерева (1 + 8)
-    const uint max_blocks = std::max(N_body * 2, 1000000u); // разумный предел
+    const size_t multiplier = 6;  // эмпирически подобранный множитель
+    const size_t min_blocks = 32; // минимум для 2 уровней дерева (1 + 8)
+    const size_t max_blocks = std::max(
+        N_body * 2, std::numeric_limits<size_t>::max()); // разумный предел
 
-    uint estimated_blocks = base_blocks * multiplier;
+    size_t estimated_blocks = base_blocks * multiplier;
 
     // Гарантируем, что выделенного места хватит хотя бы на 2 уровня деления
     estimated_blocks = std::max(estimated_blocks, min_blocks);
@@ -57,7 +60,7 @@ private:
 
 class BlockMemoryManager::Iterator {
 public:
-  Iterator(BlockMemoryManager *manager, uint index)
+  Iterator(BlockMemoryManager *manager, size_t index)
       : manager_(manager), current_index_(index) {}
 
   ParticleBlock &operator*() {
@@ -79,5 +82,5 @@ public:
 
 private:
   BlockMemoryManager *manager_;
-  uint current_index_;
+  size_t current_index_;
 };

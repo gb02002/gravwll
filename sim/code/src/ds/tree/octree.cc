@@ -1,6 +1,7 @@
+#include <cstddef>
 #define CURRENT_MODULE_DEBUG 0
-#include "ds/tree/octree.h"
 #include "ds/storage/storage.h"
+#include "ds/tree/octree.h"
 #include "gfx/renderer/scene.h"
 #include "utils/namespaces/MyMath.h"
 #include "utils/namespaces/error_namespace.h"
@@ -69,7 +70,7 @@ int AROctreeNode::getChildIndex(const MyMath::Vector3 &p) {
 }
 std::array<MyMath::BoundingBox, 8> AROctreeNode::childBounds() {
   std::array<MyMath::BoundingBox, 8> childrenBoxes;
-  for (int i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     MyMath::Vector3 newMin, newMax;
     // Определяем координаты для оси X:
     if (i & 4) { // если бит 2 = 1
@@ -103,12 +104,12 @@ std::array<MyMath::BoundingBox, 8> AROctreeNode::childBounds() {
 // TODO must get an array for each layer. Not complex as the size is fixed
 void AROctreeNode::split(const Particle &p) {
   std::array<MyMath::BoundingBox, 8> childBoundingBoxes = childBounds();
-  for (int i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     children[i] = new AROctreeNode(childBoundingBoxes[i], Multipole(),
                                    depth + 1, maxDepth, storage);
   }
-  const int size_of_initial_block = localBlock->data_block.size;
-  for (int n = 0; n < size_of_initial_block; ++n) {
+  const size_t size_of_initial_block = localBlock->data_block.size;
+  for (size_t n = 0; n < size_of_initial_block; ++n) {
     Particle tmp_p = localBlock->deleteParticle(0);
     int childIndex = boundsCheck(tmp_p.getPosition());
     children[childIndex]->insert(tmp_p);
@@ -158,7 +159,7 @@ void AROctreeNode::printOctreeMasses() {
 
   // Если узел содержит частички, выводим массы
   if (this->localBlock) {
-    for (int i = 0; i < this->localBlock->data_block.size; ++i) {
+    for (unsigned short i = 0; i < this->localBlock->data_block.size; ++i) {
       double m = this->localBlock->getParticle(i).getMass();
       std::cout << m;
       if (i < this->localBlock->data_block.size - 1)
@@ -217,7 +218,7 @@ std::vector<gfx::renderer::SceneParticle> AROctree::get_particles_for_render() {
     if (node->localBlock && node->localBlock->data_block.size > 0) {
       auto &block = node->localBlock->data_block;
 
-      for (int i = 0; i < block.size; ++i) {
+      for (size_t i = 0; i < block.size; ++i) {
         if (i >= ParticleBlock::N)
           break;
 

@@ -37,7 +37,7 @@ public:
   float get_brightness() const { return brightness_; }
 
 private:
-  error::Result<bool> update_uniform_buffers(float delta_time);
+  error::Result<bool> update_uniform_buffers();
 
   error::Result<bool> update_vertex_buffer_from_scene();
   error::Result<bool> init_vertex_buffer(size_t initial_capacity);

@@ -18,15 +18,9 @@ struct Vector3 {
     z = other.z;
     return *this;
   }
-  // operator ::Vector3() const {
-  //   ::Vector3 v = {static_cast<float>(x), static_cast<float>(y),
-  //                  static_cast<float>(z)};
-  //   return v;
-  // }
-  // Vector3(const ::Vector3 &v) : x(v.x), y(v.y), z(v.z) {}
+  Vector3(const Vector3 &other) : x(other.x), y(other.y), z(other.z) {}
 };
 
-// Перегрузка оператора сложения для удобства
 inline Vector3 operator+(const Vector3 &a, const Vector3 &b) {
   return {a.x + b.x, a.y + b.y, a.z + b.z};
 }

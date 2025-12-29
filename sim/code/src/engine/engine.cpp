@@ -37,30 +37,32 @@ void PhysicsEngine::MainCycle() {
   return;
 }
 
-int countPoints(AROctreeNode *node) {
-  if (!node)
-    return 0;
-
-  int count = 0;
-  if (node->localBlock != nullptr)
-    count += node->localBlock->data_block.size;
-
-  // Рекурсивно обходим всех детей (предполагается, что children — массив из 8
-  // элементов)
-  for (int i = 0; i < 8; ++i) {
-    count += countPoints(node->children[i]);
-  }
-  return count;
-}
+// unsigned short countPoints(AROctreeNode *node) {
+//   if (!node)
+//     return 0;
+//
+//   unsigned short count = 0;
+//   if (node->localBlock != nullptr)
+//     count += node->localBlock->data_block.size;
+//
+//   // Рекурсивно обходим всех детей (предполагается, что children — массив из
+//   8
+//   // элементов)
+//   for (int i = 0; i < 8; ++i) {
+//     count += countPoints(node->children[i]);
+//   }
+//   return count;
+// }
 
 // Тут верхнеуровнево вызываем 2 этапа -> каждому треду по pairwise ->
 // синхронизация -> расчет мультиполя -> треды считают воздействие поля на
 // остельные частицы -> синхронизация
 int PhysicsEngine::physicsTick(
     std::chrono::high_resolution_clock::time_point tickTime) {
+  tickTime.max();
   // Получаем корневой узел дерева
   // debug::debug_print("We tick!");
-  AROctreeNode *root = tree->get_root();
+  // AROctreeNode *root = tree->get_root();
   // std::cout << "We tick!" << root->localBlock->getParticle(0) << "\n";
   // calcBlocskAx(*root->localBlock);
   // updateCoords(*root->localBlock, p_ctx.integration_step);
@@ -84,6 +86,6 @@ void PhysicsEngine::Init() {
 }
 
 void PhysicsEngine::init_threads() {
-  for (int i = 0; i < std::thread::hardware_concurrency() - 1; ++i)
+  for (size_t i = 0; i < std::thread::hardware_concurrency() - 1; ++i)
     threads.push_back(std::thread());
 };

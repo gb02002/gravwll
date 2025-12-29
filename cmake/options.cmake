@@ -6,8 +6,10 @@ string(TOLOWER ${gravwll_platform} gravwll_lower_platform)
 
 #======Options=======#
 
-# option(GRAVWLL_BUILD_WITH "<help_text>" [value])
 option(ENABLE_TESTS "Enable unittesting" OFF)
+option(GRAVWLL_SANITIZE "Enable sanitize" OFF)
+option(GRAVWLL_PERF "Perf build" OFF)
+option(GRAVWLL_ENABLE_LTO "Include lto" OFF)
 
 #======Directories=======#
 
@@ -47,4 +49,3 @@ if(CCACHE_PROGRAM)
   set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
   set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 endif()
-

@@ -12,11 +12,11 @@ ParticleBlock *BlocksAllocator::allocate() {
                        free_head, capacity);
     return nullptr;
   }
-  uint index = free_head;
+  size_t index = free_head;
   free_head = next_free_array[free_head];
   current_counter++;
 
-  std::byte *block_ptr = base + index * block_size;
+  std::byte *block_ptr = base + index * k_block_size;
   debug::debug_print("current_counter: {}", current_counter);
   return reinterpret_cast<ParticleBlock *>(block_ptr);
 }
@@ -24,7 +24,9 @@ ParticleBlock *BlocksAllocator::allocate() {
 void BlocksAllocator::deallocate(ParticleBlock *block) {
   if (!block)
     return;
-  uint index = (reinterpret_cast<std::byte *>(block) - base) / block_size;
+  size_t index =
+      static_cast<size_t>((reinterpret_cast<std::byte *>(block) - base)) /
+      k_block_size;
 
   if (index >= capacity)
     return;
@@ -36,7 +38,7 @@ void BlocksAllocator::deallocate(ParticleBlock *block) {
 
 int BlocksAllocator::initialize() {
   try {
-    base = static_cast<std::byte *>(malloc(capacity * block_size));
+    base = static_cast<std::byte *>(malloc(capacity * k_block_size));
     if (base == nullptr)
       return -1;
     last_block = base + (capacity - 1) * capacity;
@@ -45,20 +47,6 @@ int BlocksAllocator::initialize() {
     return -1;
   }
 }
-
-// // 0 if good, -1 if error
-// int BlocksAllocator::initialize() {
-//   try {
-//     this->base = (std::byte *)malloc(capacity * block_size);
-//   } catch (std::runtime_error) {
-//     std::cout << "Can't allocate memory";
-//     return -1;
-//   }
-//   if (this->base == nullptr) {
-//     return -1;
-//   }
-//   return 0;
-// };
 
 // Separate func, as we might get out of range and need reallocate without
 // destroying everything

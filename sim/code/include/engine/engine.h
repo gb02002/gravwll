@@ -17,7 +17,7 @@ public:
                          Storage &storage, DataCtx &d_ctx);
 
   ~PhysicsEngine() {
-    for (int th_n = 0; th_n < threads.size(); ++th_n) {
+    for (size_t th_n = 0; th_n < threads.size(); ++th_n) {
       if (threads[th_n].joinable())
         threads[th_n].join();
     }
@@ -26,8 +26,6 @@ public:
 
   void MainCycle();
   void Init();
-
-  std::unique_ptr<AROctree> tree;
 
 private:
   PhysicsCtx &p_ctx;
@@ -42,4 +40,7 @@ private:
   MultipoleInteractionElement multipoleInteraction;
 
   void init_threads();
+
+public:
+  std::unique_ptr<AROctree> tree;
 };

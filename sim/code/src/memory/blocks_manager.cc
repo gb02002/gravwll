@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <utility>
 
-BlockMemoryManager::BlockMemoryManager(uint N_body)
+BlockMemoryManager::BlockMemoryManager(size_t N_body)
     : arena_(compute_capacity(N_body)) {
 
   if (arena_.initialize() != 0) {
@@ -22,8 +22,8 @@ ParticleBlock *BlockMemoryManager::create_block(MortonKey key) {
   if (!block)
     return nullptr;
 
-  uint index =
-      (reinterpret_cast<std::byte *>(block) - arena_.base) / arena_.block_size;
+  size_t index = (size_t)(reinterpret_cast<std::byte *>(block) - arena_.base) /
+                 arena_.k_block_size;
   block->initialize();
   block_keys_[index] = key;
   active_blocks_[index] = true;
@@ -35,36 +35,36 @@ void BlockMemoryManager::destroy_block(ParticleBlock *p_bl) {
   if (!p_bl)
     return;
 
-  uint index =
-      (reinterpret_cast<std::byte *>(p_bl) - arena_.base) / arena_.block_size;
+  size_t index = (size_t)(reinterpret_cast<std::byte *>(p_bl) - arena_.base) /
+                 arena_.k_block_size;
   arena_.deallocate(p_bl);
   active_blocks_[index] = false;
 }
 
-ParticleBlock *BlockMemoryManager::get_block_data(uint inx) {
+ParticleBlock *BlockMemoryManager::get_block_data(size_t inx) {
   if (inx >= arena_.capacity || !active_blocks_[inx]) {
     return nullptr;
   }
   return reinterpret_cast<ParticleBlock *>(arena_.base +
-                                           inx * arena_.block_size);
+                                           inx * arena_.k_block_size);
 }
 
-const ParticleBlock *BlockMemoryManager::get_block_data(uint index) const {
+const ParticleBlock *BlockMemoryManager::get_block_data(size_t index) const {
   if (index >= arena_.capacity || !active_blocks_[index]) {
     return nullptr;
   }
   return reinterpret_cast<const ParticleBlock *>(arena_.base +
-                                                 index * arena_.block_size);
+                                                 index * arena_.k_block_size);
 }
 
-MortonKey BlockMemoryManager::get_block_key(uint inx) const {
+MortonKey BlockMemoryManager::get_block_key(size_t inx) const {
   if (inx >= block_keys_.size()) {
     return MortonKey{};
   }
   return block_keys_[inx];
 }
 
-void BlockMemoryManager::swap_blocks(uint inx_a, uint inx_b) {
+void BlockMemoryManager::swap_blocks(size_t inx_a, size_t inx_b) {
   if (inx_a >= arena_.capacity || inx_b >= arena_.capacity ||
       !active_blocks_[inx_a] || !active_blocks_[inx_b])
     return;
@@ -81,12 +81,12 @@ void BlockMemoryManager::swap_blocks(uint inx_a, uint inx_b) {
 }
 
 void BlockMemoryManager::compact() {
-  uint free_slot = 0;
+  size_t free_slot = 0;
   while (free_slot < arena_.capacity && active_blocks_[free_slot]) {
     free_slot++;
   }
 
-  for (uint i = free_slot + 1; i < arena_.capacity; i++) {
+  for (size_t i = free_slot + 1; i < arena_.capacity; i++) {
     if (active_blocks_[i]) {
       ParticleBlock *src_block = get_block_data(i);
       ParticleBlock *dest_block = get_block_data(free_slot);
@@ -107,7 +107,7 @@ void BlockMemoryManager::compact() {
 }
 
 BlockMemoryManager::Iterator BlockMemoryManager::begin() {
-  uint first_index = 0;
+  size_t first_index = 0;
   while (first_index < arena_.capacity && !active_blocks_[first_index]) {
     first_index++;
   }

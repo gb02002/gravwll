@@ -100,6 +100,9 @@ void center_system(std::vector<Particle> &particles,
 namespace generators {
 
 CResult<std::vector<Particle>> generate_keplerian_disk(size_t n, int seed) {
+  (void)n;
+  (void)seed;
+
   return CResult<std::vector<Particle>>::error(1, "not implemented");
 }
 
@@ -111,10 +114,10 @@ generate_plummer(size_t n, const MyMath::BoundingBox &box, int seed,
   std::vector<Particle> particles;
   particles.reserve(n);
 
-  std::mt19937 rng(seed);
+  std::mt19937 rng(static_cast<unsigned long>(seed));
   std::uniform_real_distribution<double> uniform(0.0, 1.0);
 
-  const double mass_per_particle = params.total_mass / n;
+  const double mass_per_particle = params.total_mass / static_cast<double>(n);
 
   for (size_t i = 0; i < n; ++i) {
     // 1. Генерация радиуса по распределению Пламмера
@@ -150,7 +153,7 @@ CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
   std::vector<Particle> particles;
   particles.reserve(n);
 
-  std::mt19937 rng(seed);
+  std::mt19937 rng(static_cast<unsigned long>(seed));
   std::uniform_real_distribution<double> dist_x(box.min.x, box.max.x);
   std::uniform_real_distribution<double> dist_y(box.min.y, box.max.y);
   std::uniform_real_distribution<double> dist_z(box.min.z, box.max.z);
@@ -159,7 +162,9 @@ CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
   for (size_t i = 0; i < n; ++i) {
     particles.push_back(
         Particle{dist_x(rng), dist_y(rng), dist_z(rng), 0, 0, 0, mass(rng),
-                 gfx::renderer::make_visual_id(i % 3, i % 6, 0, 0, 0, 0, 0)});
+                 gfx::renderer::make_visual_id(static_cast<uint8_t>(i) % 3,
+                                               static_cast<uint8_t>(i) % 6, 0,
+                                               0, 0, 0, 0)});
   }
 
   return CResult<std::vector<Particle>>::success(std::move(particles));
@@ -179,6 +184,9 @@ CResult<std::vector<Particle>> load_from_file(const std::string &filename) {
 
 CResult<std::vector<Particle>> download_dataset(const std::string &dataset_name,
                                                 size_t max_bodies) {
+  (void)dataset_name;
+  (void)max_bodies;
+
   return CResult<std::vector<Particle>>::error(1, "not implemented");
 }
 

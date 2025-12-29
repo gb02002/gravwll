@@ -2,6 +2,7 @@
 #include "ds/storage/particleBlock.h"
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <mutex>
 
 #define SOFTENER 1e-20
@@ -9,8 +10,8 @@
 
 void calcBlocskAx(ParticleBlock &block) {
   std::lock_guard<std::mutex> lock(block.get_mutex());
-  for (int i = 0; i < block.data_block.size; ++i) {
-    for (int j = i + 1; j < block.data_block.size; ++j) {
+  for (size_t i = 0; i < block.data_block.size; ++i) {
+    for (size_t j = i + 1; j < block.data_block.size; ++j) {
       if (i == j)
         continue;
 
@@ -41,9 +42,9 @@ void calcBlocskAx(ParticleBlock &block) {
 
 void updateCoords(ParticleBlock &block, std::chrono::microseconds dt) {
   std::lock_guard<std::mutex> lock(block.get_mutex());
-  double dt_sec = dt.count() * 1e-6;
+  double dt_sec = (double)dt.count() * 1e-6;
 
-  for (int i = 0; i < block.data_block.size; ++i) {
+  for (size_t i = 0; i < block.data_block.size; ++i) {
     block.get_vx()[i] += block.get_ax()[i] * dt_sec;
     block.get_vy()[i] += block.get_ay()[i] * dt_sec;
     block.get_vz()[i] += block.get_az()[i] * dt_sec;

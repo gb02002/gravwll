@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include <functional>
+#include <limits>
+#include <stdexcept>
 #include <string>
 #include <sys/types.h>
 #include <unordered_map>
@@ -56,7 +58,7 @@ struct SimulationConfig {
   SimulationConfig();
   bool validate() const;
   bool kHeadless = false;
-  int kNBodies = 0;
+  uint kNBodies = 0;
   bool kVerbose = false;
   bool kDebug = false;
   unsigned short kTreeMaxDepth = 0;
@@ -102,22 +104,46 @@ public:
          }},
         {"treemaxdepth",
          [this](const std::string &val) {
-           config_.kTreeMaxDepth = std::stoi(val);
+           int value = std::stoi(val);
+           if (value < 3)
+             throw std::out_of_range("kTreeMaxDepth must be > 3");
+           if (value > 30)
+             throw std::out_of_range("kTreeMaxDepth is over 30. Rethink");
+           config_.kTreeMaxDepth = static_cast<unsigned short>(value);
          }},
         {"integrationstep",
          [this](const std::string &val) {
-           config_.integration_step = std::stoi(val);
+           int value = std::stoi(val);
+           if (value < 0)
+             throw std::out_of_range("integrationstep must be > 0");
+           if (value > std::numeric_limits<int>::max())
+             throw std::out_of_range(
+                 "integrationstep is too big for int to handle");
+           config_.integration_step = static_cast<unsigned short>(value);
          }},
         {"fps",
          [this](const std::string &val) {
-           config_.kFpsDesired = std::stoi(val);
+           int value = std::stoi(val);
+           if (value < 0)
+             throw std::out_of_range("fps must be > 0");
+           if (value > std::numeric_limits<int>::max())
+             throw std::out_of_range("fps is too big for int to handle");
+           config_.kFpsDesired = static_cast<unsigned short>(value);
          }},
         {"datamode",
          [this](const std::string &val) {
            config_.data_population_mode = config_.from_string(val);
          }},
         {"n",
-         [this](const std::string &val) { config_.kNBodies = std::stoi(val); }},
+         [this](const std::string &val) {
+           int value = std::stoi(val);
+           if (value < 0)
+             throw std::out_of_range("integrationstep must be > 0");
+           if (value > std::numeric_limits<int>::max())
+             throw std::out_of_range(
+                 "integrationstep is too big for int to handle");
+           config_.kNBodies = static_cast<uint>(value);
+         }},
         {"seed", // добавлен обработчик для seed
          [this](const std::string &val) {
            config_.random_seed = std::stoi(val);

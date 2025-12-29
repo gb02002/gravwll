@@ -1,6 +1,7 @@
 #pragma once
 #include "memory/blocks_manager.h"
 #include "particleBlock.h"
+#include <cstddef>
 #include <vector>
 
 class Storage {
@@ -15,5 +16,5 @@ public:
                                      const std::vector<Particle> &particles);
   void release_block(ParticleBlock *block);
   void transferParticle(ParticleBlock *fromBlock, ParticleBlock *toBlock,
-                        int index);
+                        size_t index);
 };

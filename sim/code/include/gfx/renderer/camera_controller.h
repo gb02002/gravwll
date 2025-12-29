@@ -19,8 +19,8 @@ public:
 
 private:
   void process_keyboard_(float delta_time);
-  void process_mouse_(float delta_time);
-  void process_mouse_wheel_(float delta_time);
+  void process_mouse_();
+  void process_mouse_wheel_();
 
   core::Camera &camera_;
   core::InputManager &input_;

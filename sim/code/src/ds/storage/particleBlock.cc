@@ -1,28 +1,29 @@
 #include "ds/storage/particleBlock.h"
 #include "core/bodies/particles.h"
 #include "iostream"
+#include <cstddef>
 #include <mutex>
 #include <utility>
 #include <vector>
 
 ParticleBlock::ParticleBlock(uint morton_key,
                              const std::vector<Particle> &particles)
-    : meta_block(MortonKey{morton_key}), data_block() {
+    : data_block(), meta_block(MortonKey{morton_key}) {
   for (const auto &p : particles) {
     addParticle(p);
   }
 }
 
-int ParticleBlock::addParticle(const Particle &p) {
+size_t ParticleBlock::addParticle(const Particle &p) {
   std::lock_guard<std::mutex> lock(m_mutex);
 
   if (is_full()) {
     std::cout << "We have exceeded the ParticleBlock size. Were not able to "
                  "add a Particle. Suck it!\n";
-    return -1;
+    return size_t(-1);
   }
 
-  int index = data_block.size++;
+  size_t index = data_block.size++;
   data_block.x[index] = p.getX();
   data_block.y[index] = p.getY();
   data_block.z[index] = p.getZ();
@@ -39,10 +40,10 @@ int ParticleBlock::addParticle(const Particle &p) {
   return index;
 }
 
-Particle ParticleBlock::deleteParticle(int index) {
+Particle ParticleBlock::deleteParticle(size_t index) {
   std::lock_guard<std::mutex> lock(m_mutex);
 
-  if (index >= data_block.size || index < 0)
+  if (index >= data_block.size)
     return Particle{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
   Particle p{
@@ -77,23 +78,23 @@ Particle ParticleBlock::deleteParticle(int index) {
 void ParticleBlock::printParticles() {
   std::lock_guard<std::mutex> lock(m_mutex);
   std::cout << "Particles in block (" << data_block.size << " particles):\n";
-  for (int i = 0; i < data_block.size; ++i) {
+  for (size_t i = 0; i < data_block.size; ++i) {
     std::cout << "Particle " << i << ": x=" << data_block.x[i]
               << ", y=" << data_block.y[i] << ", z=" << data_block.z[i] << "\n";
   }
 }
 
-MyMath::Vector3 ParticleBlock::getPosition(int index) const {
+MyMath::Vector3 ParticleBlock::getPosition(size_t index) const {
   std::lock_guard<std::mutex> lock(m_mutex);
-  if (index < 0 || index >= data_block.size) {
+  if (index >= data_block.size) {
     return {0.0, 0.0, 0.0};
   }
   return {data_block.x[index], data_block.y[index], data_block.z[index]};
 }
 
-Particle ParticleBlock::getParticle(int index) const {
+Particle ParticleBlock::getParticle(size_t index) const {
   std::lock_guard<std::mutex> lock(m_mutex);
-  if (index < 0 || index >= data_block.size) {
+  if (index >= data_block.size) {
     return Particle{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   }
 

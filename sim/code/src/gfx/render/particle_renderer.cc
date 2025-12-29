@@ -105,7 +105,7 @@ error::Result<bool> ParticleRenderer::init() {
     scene_.get_camera().set_perspective(
         60.0f,
         static_cast<float>(vulkan_core_.swapchainExtent.width) /
-            vulkan_core_.swapchainExtent.height,
+            static_cast<float>(vulkan_core_.swapchainExtent.height),
         0.1f, 1000.0f);
     scene_.get_camera().look_at(glm::vec3(0.0f, 0.0f, 15.0f), glm::vec3(0.0f),
                                 glm::vec3(0.0f, 0.0f, 1.0f));
@@ -160,7 +160,7 @@ error::Result<bool> ParticleRenderer::render_frame() {
 
   vulkan_core_.currentSwapchainImageIndex = image_index;
 
-  if (auto e = update_uniform_buffers(delta_time_); e.is_error()) {
+  if (auto e = update_uniform_buffers(); e.is_error()) {
     return e;
   }
 
@@ -207,7 +207,7 @@ error::Result<bool> ParticleRenderer::update_vertex_buffer_from_scene() {
   return error::Result<bool>::success(true);
 }
 
-error::Result<bool> ParticleRenderer::update_uniform_buffers(float delta_time) {
+error::Result<bool> ParticleRenderer::update_uniform_buffers() {
   auto &frame = vulkan_core_.frames[vulkan_core_.frameIndex];
 
   // Получаем камеру из сцены
@@ -219,7 +219,7 @@ error::Result<bool> ParticleRenderer::update_uniform_buffers(float delta_time) {
 
   // Создаем проекционную матрицу
   float aspect = static_cast<float>(vulkan_core_.swapchainExtent.width) /
-                 vulkan_core_.swapchainExtent.height;
+                 static_cast<float>(vulkan_core_.swapchainExtent.height);
   ubo.projection = glm::perspective(
       glm::radians(camera.get_fov() / zoom_level_), aspect, 0.1f, 1000.0f);
   ubo.projection[1][1] *= -1; // Инвертируем Y для Vulkan
@@ -299,8 +299,7 @@ error::Result<bool>
 ParticleRenderer::recreate_vertex_buffer(size_t new_capacity) {
   try {
     vulkan_core_.particle_count = scene_.get_particles_count();
-    vk::DeviceSize bufferSize =
-        sizeof(vulkan_core::Vertex) * vulkan_core_.particle_count;
+    vk::DeviceSize bufferSize = sizeof(vulkan_core::Vertex) * new_capacity;
 
     // Создаем временный staging буфер
     vk::raii::Buffer stagingBuffer{nullptr};

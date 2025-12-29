@@ -2,6 +2,7 @@
 #include "core/bodies/particles.h"
 #include "utils/namespaces/error_namespace.h"
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <mutex>
 #include <vector>
@@ -42,7 +43,7 @@ public:
     alignas(16) std::array<double, N> mass;
     alignas(16) std::array<uint64_t, N> visual_id;
 
-    int size = 0;
+    unsigned short size = 0;
 
     DataBlock() noexcept = default;
     DataBlock(DataBlock &&other) noexcept = default;
@@ -69,8 +70,8 @@ public:
 
   struct MetaBlock {
     MortonKey key;
-    uint arena_block = -1;
-    float hotness = 0.7;
+    uint arena_block = 0;
+    float hotness = 0.7f;
     uint next_logical_block;
 
     MetaBlock() noexcept = default;
@@ -79,11 +80,11 @@ public:
     MetaBlock &operator=(MetaBlock &&other) noexcept = default;
   };
 
-  int addParticle(const Particle &p);
-  Particle deleteParticle(int index);
+  size_t addParticle(const Particle &p);
+  Particle deleteParticle(size_t index);
   void printParticles();
-  Particle getParticle(int index) const;
-  MyMath::Vector3 getPosition(int index) const;
+  Particle getParticle(size_t index) const;
+  MyMath::Vector3 getPosition(size_t index) const;
 
 #define DEFINE_GETTER(field)                                                   \
   const std::array<double, N> &get_##field() const {                           \
@@ -106,7 +107,7 @@ public:
 
 #undef DEFINE_GETTER
 
-  int size() const { return data_block.size; }
+  unsigned short size() const { return data_block.size; }
   bool is_full() const { return data_block.size >= N; }
   bool is_empty() const { return data_block.size == 0; }
   DataBlock data_block;

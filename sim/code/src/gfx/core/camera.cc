@@ -59,9 +59,10 @@ void Camera::set_fov(float fov_degrees) {
 
 void Camera::update_vectors_() {
   glm::vec3 new_front;
-  new_front.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
-  new_front.y = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
-  new_front.z = sin(glm::radians(pitch_));
+  new_front.x =
+      (float)(cos(glm::radians(yaw_)) * (float)cos(glm::radians(pitch_)));
+  new_front.y = (float)(sin(glm::radians(yaw_)) * cos(glm::radians(pitch_)));
+  new_front.z = (float)sin(glm::radians(pitch_));
 
   front_ = glm::normalize(new_front);
 

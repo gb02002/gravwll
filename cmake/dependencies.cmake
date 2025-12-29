@@ -42,7 +42,7 @@ if(EXISTS ${THIRD_PARTY_DIR}/VulkanMemoryAllocator/include/vk_mem_alloc.h)
   target_include_directories(VulkanMemoryAllocator SYSTEM INTERFACE
     ${THIRD_PARTY_DIR}/VulkanMemoryAllocator/include
   )
-  target_link_libraries(VulkanMemoryAllocator INTERFACE SYSTEM Vulkan::Vulkan)
+  target_link_libraries(VulkanMemoryAllocator INTERFACE Vulkan::Vulkan)
   message(STATUS "VMA included (header-only)")
 else()
   message(FATAL_ERROR "VMA missing in third_party!")
@@ -67,7 +67,7 @@ if(EXISTS ${THIRD_PARTY_DIR}/imgui/imgui.h)
     ${THIRD_PARTY_DIR}/imgui/backends
   )
 
-  target_link_libraries(imgui PUBLIC SYSTEM
+  target_link_libraries(imgui PUBLIC
     SDL3::SDL3
     Vulkan::Vulkan
   )
@@ -99,9 +99,8 @@ else()
 endif()
 
 add_library(gravwll_vulkan_dependencies INTERFACE)
-target_compile_options(gravwll_vulkan_dependencies INTERFACE -Wno-error)
 
-target_link_libraries(gravwll_vulkan_dependencies INTERFACE SYSTEM
+target_link_libraries(gravwll_vulkan_dependencies INTERFACE
     Vulkan::Vulkan
     vk-bootstrap
     VulkanMemoryAllocator
@@ -110,6 +109,6 @@ target_link_libraries(gravwll_vulkan_dependencies INTERFACE SYSTEM
     imgui
 )
 
-# if(TARGET imgui)
-#   target_link_libraries(gravwll_vulkan_dependencies INTERFACE SYSTEM imgui)
-# endif()
+if(TARGET imgui)
+  target_link_libraries(gravwll_vulkan_dependencies INTERFACE imgui)
+endif()

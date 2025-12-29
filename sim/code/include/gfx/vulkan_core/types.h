@@ -44,13 +44,25 @@ const uint SUBTYPE_ASTEROID_CARBONACEOUS = 3;
 struct VisualID {
   uint64_t bits;
 
-  inline uint8_t category() const { return bits & 0xF; }
-  inline uint8_t subtype() const { return (bits >> 4) & 0xF; }
-  inline uint8_t shader() const { return (bits >> 8) & 0xFF; }
-  inline uint8_t texture() const { return (bits >> 16) & 0xFF; }
-  inline uint8_t lod() const { return (bits >> 24) & 0xFF; }
-  inline uint16_t sim_mode() const { return (bits >> 32) & 0xFFFF; }
-  inline uint16_t flags() const { return (bits >> 48) & 0xFFFF; }
+  inline uint8_t category() const { return static_cast<uint8_t>(bits & 0xF); }
+  inline uint8_t subtype() const {
+    return static_cast<uint8_t>((bits >> 4) & 0xF);
+  }
+  inline uint8_t shader() const {
+    return static_cast<uint8_t>((bits >> 8) & 0xFF);
+  }
+  inline uint8_t texture() const {
+    return static_cast<uint8_t>((bits >> 16) & 0xFF);
+  }
+  inline uint8_t lod() const {
+    return static_cast<uint8_t>((bits >> 24) & 0xFF);
+  }
+  inline uint16_t sim_mode() const {
+    return static_cast<uint16_t>((bits >> 32) & 0xFFFF);
+  }
+  inline uint16_t flags() const {
+    return static_cast<uint16_t>((bits >> 48) & 0xFFFF);
+  }
 };
 
 constexpr VisualID make_visual_id(uint8_t cat, uint8_t subtype, uint8_t shader,

@@ -13,7 +13,7 @@ void Scene::set_particles(const std::vector<SceneParticle> &particles) {
 }
 
 void Scene::update(float delta_time) {
-  debug::debug_print("Scene update called");
+  debug::debug_print("Scene update called with %f", delta_time);
   // В будущем здесь может быть обновление частиц,
   // анимации, физика и т.д.
   // Сейчас оставляем пустым, так как камерой управляет CameraController
