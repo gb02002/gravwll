@@ -11,8 +11,6 @@
 void SimulationConfigBuilder::apply_mappings(
     const std::unordered_map<std::string, std::string> &source) {
   for (const auto &[key, value] : source) {
-    // std::cout << "This is a key-value we proccess in apply_mappings: " << key
-    // << "-" << value << std::endl;
     auto it = arg_map_.find(key);
     if (it != arg_map_.end()) {
       it->second(value);
@@ -36,6 +34,8 @@ SimulationConfigBuilder &SimulationConfigBuilder::with_defaults() {
 
 SimulationConfigBuilder &
 SimulationConfigBuilder::with_config_file(const std::string &filename) {
+  if (filename.empty())
+    return *this;
   auto config_data = file_reader_.read_config(filename);
   apply_mappings(config_data.values);
   return *this;

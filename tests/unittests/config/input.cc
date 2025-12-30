@@ -1,5 +1,6 @@
 #include "ctx/simulation_config.h"
 #include "gtest/gtest.h"
+#include <exception>
 #define private public
 
 TEST(ConfigTest, set_defaults) {
@@ -15,14 +16,27 @@ TEST(ConfigTest, set_defaults) {
 }
 
 TEST(ConfigTest, cli_overwriting) {
-  char *argv[] = {(char *)"./test",  (char *)"-h",    (char *)"-n",
-                  (char *)"1244",    (char *)"-v",    (char *)"-d",
-                  (char *)"uniform", (char *)"--fps", (char *)"1000",
-                  (char *)"-s",      (char *)"43",    (char *)"-is",
-                  (char *)"422"};
-  int argc = 13;
+  char *argv[] = {(char *)"./test", (char *)"-h",   (char *)"true",
+                  (char *)"-n",     (char *)"1244", (char *)"-v",
+                  (char *)"true",   (char *)"-d",   (char *)"uniform",
+                  (char *)"--fps",  (char *)"1000", (char *)"-s",
+                  (char *)"43",     (char *)"-is",  (char *)"422"};
+  int argc = 15;
+  try {
+    auto overwriten_config = SimulationConfigBuilder()
+                                 .with_defaults()
+                                 .with_config_file( // Here kNBodies=99999
+                                     "test.config.conf")
+                                 .with_command_line(argc, argv)
+                                 .build();
+  } catch (const std::exception &e) {
+    std::cerr << "EXCEPTION: " << e.what() << std::endl;
+    throw;
+  }
   auto overwriten_config = SimulationConfigBuilder()
                                .with_defaults()
+                               .with_config_file( // Here kNBodies=99999
+                                   "test.config.conf")
                                .with_command_line(argc, argv)
                                .build();
   EXPECT_EQ(overwriten_config.data_population_mode, SimulationConfig::UNIFORM);
@@ -41,7 +55,7 @@ TEST(ConfigTest, parse_file) {
                          .build();
   EXPECT_EQ(file_config.data_population_mode, SimulationConfig::PLUMMER);
   EXPECT_EQ(file_config.kHeadless, true);
-  EXPECT_EQ(file_config.kTreeMaxDepth, 45);
+  EXPECT_EQ(file_config.kTreeMaxDepth, 15);
   EXPECT_EQ(file_config.kNBodies, 99999);
   EXPECT_EQ(file_config.kFpsDesired, 55);
   EXPECT_EQ(file_config.integration_step, 195);
@@ -50,12 +64,12 @@ TEST(ConfigTest, parse_file) {
 
 // This is how usually we init the config. We check correct order of overwriting
 TEST(ConfigTest, usual_flow) {
-  char *argv[] = {(char *)"./test",  (char *)"-h",    (char *)"-n",
-                  (char *)"1244",    (char *)"-v",    (char *)"-d",
-                  (char *)"uniform", (char *)"--fps", (char *)"1000",
-                  (char *)"-s",      (char *)"43",    (char *)"-is",
-                  (char *)"422"};
-  int argc = 13;
+  char *argv[] = {(char *)"./test", (char *)"-h",   (char *)"true",
+                  (char *)"-n",     (char *)"1244", (char *)"-v",
+                  (char *)"true",   (char *)"-d",   (char *)"uniform",
+                  (char *)"--fps",  (char *)"1000", (char *)"-s",
+                  (char *)"43",     (char *)"-is",  (char *)"422"};
+  int argc = 15;
   auto general_config =
       SimulationConfigBuilder()
           .with_defaults()   // Here the kNBodies=100

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "utils/namespaces/error_namespace.h"
 #include <functional>
 #include <limits>
 #include <stdexcept>
@@ -104,6 +105,7 @@ public:
          }},
         {"treemaxdepth",
          [this](const std::string &val) {
+           debug::debug_print("treemaxdepth value {}", val);
            int value = std::stoi(val);
            if (value < 3)
              throw std::out_of_range("kTreeMaxDepth must be > 3");
@@ -113,6 +115,7 @@ public:
          }},
         {"integrationstep",
          [this](const std::string &val) {
+           debug::debug_print("integration_step value {}", val);
            int value = std::stoi(val);
            if (value < 0)
              throw std::out_of_range("integrationstep must be > 0");
@@ -123,6 +126,7 @@ public:
          }},
         {"fps",
          [this](const std::string &val) {
+           debug::debug_print("fps value {}", val);
            int value = std::stoi(val);
            if (value < 0)
              throw std::out_of_range("fps must be > 0");
@@ -136,6 +140,7 @@ public:
          }},
         {"n",
          [this](const std::string &val) {
+           debug::debug_print("n value {}", val);
            int value = std::stoi(val);
            if (value < 0)
              throw std::out_of_range("integrationstep must be > 0");
@@ -146,6 +151,7 @@ public:
          }},
         {"seed", // добавлен обработчик для seed
          [this](const std::string &val) {
+           debug::debug_print("seed value {}", val);
            config_.random_seed = std::stoi(val);
          }},
     };
@@ -157,8 +163,7 @@ private:
 
 public:
   SimulationConfigBuilder &with_defaults();
-  SimulationConfigBuilder &
-  with_config_file(const std::string &filename = "config.conf");
+  SimulationConfigBuilder &with_config_file(const std::string &filename);
   SimulationConfigBuilder &with_command_line(int argc, char **argv);
   SimulationConfig build();
 

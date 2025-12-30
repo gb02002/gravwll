@@ -14,4 +14,5 @@ cmake -S . -B ${BUILD_DIR} \
 cmake --build ${BUILD_DIR} --parallel
 
 cd ${BUILD_DIR}
+export GTEST_COLOR=yes
 ctest --rerun-failed --output-on-failure
