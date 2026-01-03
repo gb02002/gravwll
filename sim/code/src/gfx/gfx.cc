@@ -4,6 +4,8 @@
 #include <chrono>
 #include <iostream>
 
+// #define CURRENT_MODULE_DEBUG 0
+
 namespace gfx {
 GfxEngine::GfxEngine(GfxCtx &g_ctx, SimulationState &s_state, AROctree &tree)
     : g_ctx_(g_ctx), s_state_(s_state), tree_(tree) {};

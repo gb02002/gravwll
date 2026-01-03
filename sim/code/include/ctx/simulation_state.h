@@ -2,7 +2,7 @@
 
 #include <atomic>
 #include <iostream>
-enum class STATE { RUN, STOP, EXIT, ERROR, INITIALIZING, WARM_UP };
+enum class STATE { RUN, STOP, EXIT, ERROR, INITIALIZING };
 
 // Общее состояние симуляции, разделяемое между компонентами
 struct SimulationState {
@@ -10,7 +10,9 @@ struct SimulationState {
   std::atomic<bool> should_exit{false};
 
   void set_state(STATE new_state) { current_state = new_state; }
+  STATE get_state() { return current_state; }
   bool is_running() const { return current_state == STATE::RUN; }
+  bool is_init_phase() const { return current_state == STATE::INITIALIZING; }
   void request_exit() {
     std::cout << "request_exit invoked" << std::endl;
     should_exit = true;

@@ -32,7 +32,7 @@ private:
   DataCtx &d_ctx;
   SimulationState &state;
   Storage &storage;
-  int physicsTick(std::chrono::high_resolution_clock::time_point tickTime);
+  int physics_tick(std::chrono::high_resolution_clock::time_point tickTime);
 
   std::vector<std::thread> threads;
 

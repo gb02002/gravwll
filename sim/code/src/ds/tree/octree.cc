@@ -184,7 +184,7 @@ struct TraversalStackFrame {
 };
 
 inline glm::vec3 transform_simulation_to_gfx(double x, double y, double z) {
-  const double scale = 1000;
+  const double scale = 100;
   return glm::vec3(x * scale, y * scale, z * scale);
 }
 

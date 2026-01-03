@@ -157,7 +157,7 @@ CResult<std::vector<Particle>> generate_uniform(const MyMath::BoundingBox &box,
   std::uniform_real_distribution<double> dist_x(box.min.x, box.max.x);
   std::uniform_real_distribution<double> dist_y(box.min.y, box.max.y);
   std::uniform_real_distribution<double> dist_z(box.min.z, box.max.z);
-  std::uniform_real_distribution<double> mass(1, 2e30);
+  std::uniform_real_distribution<double> mass(1, 1e4);
 
   for (size_t i = 0; i < n; ++i) {
     particles.push_back(

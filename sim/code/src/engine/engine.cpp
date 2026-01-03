@@ -1,7 +1,9 @@
 #include "engine/engine.h"
 #include "ctx/ctx.h"
+#include "ctx/simulation_state.h"
 #include "ds/storage/storage.h"
 #include "ds/tree/octree.h"
+#include "engine/pairwise.h"
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -9,15 +11,21 @@
 #include <vector>
 
 void PhysicsEngine::MainCycle() {
-  std::cout << "Мы в основном цикле движка!\n";
+  std::cout << "MainCycle called\n";
   using namespace std::chrono;
 
-  // Начальное значение следующего тика
   auto nextTickTime = high_resolution_clock::now() + p_ctx.integration_step;
 
+  // NOTE: spinlock for INIT
+  while (state.is_init_phase()) {
+    std::this_thread::sleep_for(p_ctx.integration_step);
+    std::cout << "spinlock iteration\n";
+  }
+
   while (state.is_running()) {
+    std::cout << "MainCycle iteration\n";
     auto startOfTick = high_resolution_clock::now();
-    physicsTick(startOfTick);
+    physics_tick(startOfTick);
 
     auto endOfTick = high_resolution_clock::now();
     microseconds tickDuration =
@@ -57,15 +65,14 @@ void PhysicsEngine::MainCycle() {
 // Тут верхнеуровнево вызываем 2 этапа -> каждому треду по pairwise ->
 // синхронизация -> расчет мультиполя -> треды считают воздействие поля на
 // остельные частицы -> синхронизация
-int PhysicsEngine::physicsTick(
+int PhysicsEngine::physics_tick(
     std::chrono::high_resolution_clock::time_point tickTime) {
   tickTime.max();
   // Получаем корневой узел дерева
-  // debug::debug_print("We tick!");
-  // AROctreeNode *root = tree->get_root();
-  // std::cout << "We tick!" << root->localBlock->getParticle(0) << "\n";
-  // calcBlocskAx(*root->localBlock);
-  // updateCoords(*root->localBlock, p_ctx.integration_step);
+  debug::debug_print("We tick!");
+  AROctreeNode *root = tree->get_root();
+  calcBlocskAx(*root->localBlock);
+  updateCoords(*root->localBlock, p_ctx.integration_step);
   return 0;
 }
 

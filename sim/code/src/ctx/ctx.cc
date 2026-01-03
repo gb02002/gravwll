@@ -34,7 +34,6 @@ void Ctx::initialize_components() {
     if (!validate()) {
       throw std::runtime_error("Context validation failed!");
     }
-    state_.set_state(STATE::WARM_UP);
   } catch (const std::exception &e) {
     state_.set_state(STATE::ERROR);
     if (config_.kVerbose) {
