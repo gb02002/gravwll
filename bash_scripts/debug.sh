@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BUILD_DIR=build
-BUILD_TYPE=RelWithDebInfo
+BUILD_TYPE=Debug
 
 cmake -S . -B ${BUILD_DIR} \
   -G Ninja \
