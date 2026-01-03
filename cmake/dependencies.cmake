@@ -2,6 +2,15 @@
 
 set(THIRD_PARTY_DIR ${gravwll_root}/third_party)
 
+#=====TBB=====#
+find_package(TBB REQUIRED)
+if(TBB_FOUND)
+  message(STATUS "TBB found, version: ${TBB_VERSION}")
+else()
+  message(FATAL_ERROR "TBB is missing!")
+endif()
+
+#=====GRAPHICS=====#
 # VULKAN
 find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)
@@ -107,6 +116,7 @@ target_link_libraries(gravwll_vulkan_dependencies INTERFACE
     SDL3::SDL3
     ${GLM_TARGET}
     imgui
+    TBB::tbb
 )
 
 if(TARGET imgui)
