@@ -28,9 +28,18 @@
 
 ##### Connect tree and vertex buffer
 
-- [ ] start simple
-- [ ] add AROctree.get_particles_for_render(params_for_culling) method
+- [x] start simple
+- [x] add AROctree.get_particles_for_render(params_for_culling) method
 
 Add stage buffering only when needed. This is complex, especially with LOD
 
-##### Physics
+### Version 0.0.3
+
+Think... This is big physics version.
+
+- [x] turn back internal forces
+- [ ] p2p
+
+#### Internal forces
+
+We used to have the implementation
