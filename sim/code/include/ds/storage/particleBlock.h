@@ -80,6 +80,7 @@ public:
     MetaBlock &operator=(MetaBlock &&other) noexcept = default;
   };
 
+  ParticleBlock *near_field[8];
   size_t addParticle(const Particle &p);
   Particle deleteParticle(size_t index);
   void printParticles();

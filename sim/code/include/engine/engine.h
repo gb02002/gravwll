@@ -40,6 +40,7 @@ private:
   MultipoleInteractionElement multipoleInteraction;
 
   void init_threads();
+  void run();
 
 public:
   std::unique_ptr<AROctree> tree;

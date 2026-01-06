@@ -9,7 +9,6 @@ out
 tests/googletest
 compile_commands.json
 gravwll_analisys
-sim/code/include/ctx/config.h
 
 # Benchmarking
 benchmarks/**/*.bench
@@ -22,6 +21,12 @@ vk_layer_settings.txt
 
 # Datasets
 assets/datasets/*
+
+# Config
+
+config.h
+config.conf
+poll.py
 
 ## Standart
 

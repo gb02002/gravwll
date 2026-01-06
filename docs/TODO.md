@@ -43,3 +43,8 @@ Think... This is big physics version.
 #### Internal forces
 
 We used to have the implementation
+
+#### Within block
+
+We must change p2p to work on storage...
+I can't figure out yet how to implement linear storage traverse with spatial-aware offset, so lets start with simple recursion with deref
