@@ -23,7 +23,7 @@ That's why it went off: from Go to C++, from Wiki to Greengard & Rokhlin, from n
 
 - **Fast Multipole Method** (adaptive octree, multipole expansions up to order ~10, M2M/M2L/L2L translations)
 - **Aarseth integrators**: Hermite (4th‑order) and IAS15 (15th‑order, adaptive)
-- **Data‑oriented design**: AoSoA storage, Morton‑ordered nodes for locality (see [morton-order-test](https://github.com/gb02002/morton-order-test))
+- **Data‑oriented design**: AoSoA storage, Morton‑ordered nodes for locality (see [morton-order-test](https://github.com/gb02002/SFCs_tests))
 - **NUMA‑aware memory management** (arena allocators inspired by kernel slab allocators)
 - **C++20 concepts** for particle types, expansion orders, and interaction kernels
 - **Intel TBB** for parallel tree traversal and interaction lists
@@ -44,9 +44,14 @@ gravwll is a **long‑term work in progress**. Core components are functional:
 
 The code is **not ready for production use**.
 
-## Dev doc
+## Dev doc and progress
 
 More documentation can be found under docs/ directory. There are rules, build flags and current TODO.
+
+Some progress can be found in discussions:
+
+![Initial octree visualisation](https://private-user-images.githubusercontent.com/126925878/550590688-1af3dcf4-5629-4644-a401-97aecce77db0.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzEyNjY5MDgsIm5iZiI6MTc3MTI2NjYwOCwicGF0aCI6Ii8xMjY5MjU4NzgvNTUwNTkwNjg4LTFhZjNkY2Y0LTU2MjktNDY0NC1hNDAxLTk3YWVjY2U3N2RiMC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMjE2JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDIxNlQxODMwMDhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02ZTYxZTQ5OTUwOTQxNzRlNDUyNWVjNDhlY2NkYmNkNGQyNjlmMjk5Yzg1NTJhYjRlZGI4YjIzMTkwNTA3NWE4JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.2wpG_oAUvrEWG6NtJZDaw7H6U2MzhkR80UU87yzQ3AU)
+![Current state](https://private-user-images.githubusercontent.com/126925878/550592567-cdaadd2a-b5ec-498d-a67b-d9f257a0fb80.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzEyNjcyODgsIm5iZiI6MTc3MTI2Njk4OCwicGF0aCI6Ii8xMjY5MjU4NzgvNTUwNTkyNTY3LWNkYWFkZDJhLWI1ZWMtNDk4ZC1hNjdiLWQ5ZjI1N2EwZmI4MC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMjE2JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDIxNlQxODM2MjhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1mNzE3MmI5OWIxMTRjYzdhMmFlZWM3ZWM5NDBmMTQ3ODBiYTc4OWMwMzY3NDg4YjkxODljYmY0NmNlZWFmOTI5JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.6ZONVeAESIuJoAaezb-y-SG2z33VIdqlrKK8p0DazeA)
 
 ## Building
 
@@ -122,7 +127,7 @@ gravwll/
 ## Related Research Repositories
 
 - [**morton-order-test**](https://github.com/gb02002/SFCs_tests) – experiments with Morton order for octree node locality
-- [**fmm-python-prototype**](https://github.com/gb02002/fmm-prototype) – Python prototype used to validate FMM expansions
+- [**fmm-python-prototype**](https://github.com/gb02002/fmm_prototype) – Python prototype used to validate FMM expansions
 - [**hermite-integrator-prototype**](https://github.com/gb02002/hermite) – simple integrator tests
 
 ## Goals (Non‑Exhaustive)
