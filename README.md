@@ -1,6 +1,6 @@
 # gravwll – N‑body Simulation with Fast Multipole Method and Modern Integrators
 
-gravwll is a **single‑node, NUMA‑aware** N‑body simulation framework that combines the Fast Multipole Method (FMM) with high‑order Aarseth integrators (Hermite, IAS15). It is written in modern C++20 with a strong focus on **data‑oriented design (DOD)** and low‑level performance optimizations: cache locality, memory access patterns, and vectorization. A Vulkan‑based visualisation layer is under development for real‑time inspection of particle systems.
+gravwll is a **single‑socket** N‑body simulation framework that combines the Fast Multipole Method (FMM) with high‑order Aarseth integrators (Hermite, IAS15). It is written in modern C++20 with a strong focus on **data‑oriented design (DOD)** and low‑level performance optimizations: cache locality, memory access patterns, and vectorization. A Vulkan‑based visualisation layer is under development for real‑time inspection of particle systems.
 
 ## Why?
 
@@ -24,7 +24,7 @@ That's why it went off: from Go to C++, from Wiki to Greengard & Rokhlin, from n
 - **Fast Multipole Method** (adaptive octree, multipole expansions up to order ~10, M2M/M2L/L2L translations)
 - **Aarseth integrators**: Hermite (4th‑order) and IAS15 (15th‑order, adaptive)
 - **Data‑oriented design**: AoSoA storage, Morton‑ordered nodes for locality (see [morton-order-test](https://github.com/gb02002/SFCs_tests))
-- **NUMA‑aware memory management** (arena allocators inspired by kernel slab allocators)
+- **custon memory management** (arena allocators inspired by kernel slab allocators)
 - **C++20 concepts** for particle types, expansion orders, and interaction kernels
 - **Intel TBB** for parallel tree traversal and interaction lists
 - **Google Benchmark** & **perf** integration for continuous performance tracking
@@ -38,7 +38,7 @@ gravwll is a **long‑term work in progress**. Core components are functional:
 - [WIP] Multipole expansions (spherical harmonics, up to order 8)
 - [WIP] Translation operators (M2M, M2L, L2L)
 - [WIP] Hermite integrator (4th‑order)
-- [WIP] Vulkan frontend
+- [WIP] Vulkan front
 - [ ] Widen integrator pool for runtime pick (incl symplex and their usability)
 - [ ] Production‑ready error estimation and adaptive refinement
 
@@ -46,31 +46,60 @@ The code is **not ready for production use**.
 
 ## Dev doc and progress
 
-More documentation can be found under docs/ directory. There are rules, build flags and current TODO.
+More documentation can be found under [docs](docs/) directory. There are rules, build flags, current TODO and deep dive in some topics(e.g. reflection on [Memory Manager design](/docs/MEMORY_MANAGER.md))
 
-Some progress can be found in discussions:
+Some progress can be found in discussions, e.g.:
 
+Initial octree visualisation:
 ![Initial octree visualisation](https://private-user-images.githubusercontent.com/126925878/550590688-1af3dcf4-5629-4644-a401-97aecce77db0.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzEyNjY5MDgsIm5iZiI6MTc3MTI2NjYwOCwicGF0aCI6Ii8xMjY5MjU4NzgvNTUwNTkwNjg4LTFhZjNkY2Y0LTU2MjktNDY0NC1hNDAxLTk3YWVjY2U3N2RiMC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMjE2JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDIxNlQxODMwMDhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT02ZTYxZTQ5OTUwOTQxNzRlNDUyNWVjNDhlY2NkYmNkNGQyNjlmMjk5Yzg1NTJhYjRlZGI4YjIzMTkwNTA3NWE4JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.2wpG_oAUvrEWG6NtJZDaw7H6U2MzhkR80UU87yzQ3AU)
+
+Current state of Vulkan:
 ![Current state](https://private-user-images.githubusercontent.com/126925878/550592567-cdaadd2a-b5ec-498d-a67b-d9f257a0fb80.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzEyNjcyODgsIm5iZiI6MTc3MTI2Njk4OCwicGF0aCI6Ii8xMjY5MjU4NzgvNTUwNTkyNTY3LWNkYWFkZDJhLWI1ZWMtNDk4ZC1hNjdiLWQ5ZjI1N2EwZmI4MC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMjE2JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDIxNlQxODM2MjhaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1mNzE3MmI5OWIxMTRjYzdhMmFlZWM3ZWM5NDBmMTQ3ODBiYTc4OWMwMzY3NDg4YjkxODljYmY0NmNlZWFmOTI5JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.6ZONVeAESIuJoAaezb-y-SG2z33VIdqlrKK8p0DazeA)
 
 ## Building
+
+**Target Platform:** Linux (Windows and MacOS support is currently untested).
+
+### Dependencies
+
+- C++20 compiler (GCC 11+, Clang 14+)
+- CMake3.10+ (system-wide)
+- Vulkan (system-wide)
+- glm (submodules)
+- SDL3 (submodules) - builds as static with backed backend. Wayland used for development, yet the X11 was running too.
+- gTEST (system-wide) (optional)
+- Google Benchmark (system-wide) (optional)
+- Intel TBB (system-wide) (not in master yet)
+
+#### Debian derivatives
+
+```bash
+sudo apt update && sudo apt install -y build-essential cmake libvulkan-dev vulkan-tools libtbb-dev libgtest-dev libbenchmark-dev libx11-dev libwayland-dev libxkbcommon-dev
+```
+
+#### Fedora, CentOS
+
+```bash
+sudo dnf install -y gcc-c++ cmake vulkan-loader-devel vulkan-headers tbb-devel gtest-devel google-benchmark-devel libX11-devel wayland-devel libxkbcommon-devel
+```
+
+#### Arch
+
+```bash
+sudo pacman -Syu --needed base-devel cmake vulkan-devel tbb gtest benchmark
+```
+
+#### MacOS
+
+```bash
+brew install --cask vulkan-sdk && brew install cmake tbb googletest google-benchmark
+```
 
 ```bash
 git clone --recursive https://github.com/gb02002/gravwll.git
 cd gravwll
 ./bash_scripts/build_and_run.sh
 ```
-
-Dependencies:
-
-- C++20 compiler (GCC 11+, Clang 14+)
-- Intel TBB(not in master yet)
-- Vulkan SDK
-- glm
-- SDL3
-- gTEST
-- CMake3.10+
-- Google Benchmark (optional)
 
 ## Usage
 
@@ -82,47 +111,6 @@ cp /config/test.config.conf /config/config.conf
 ```
 
 Benchmarks are build with separate Makefiles and can be found under benchmarks/ directory.
-
-## Project Structure
-
-```
-gravwll/
-  ├── assets
-  │   ├── datasets
-  │   └── shaders
-  ├── bash_scripts
-  │   ├── build_and_run.sh
-  │   ├── debug.sh
-  │   └── tests.sh
-  ├── benchmarks
-  │   └── micro
-  ├── cmake
-  │   ├── dependencies.cmake
-  │   ├── options.cmake
-  │   └── warnings.cmake
-  ├── CMakeLists.txt
-  ├── config
-  │   └── test.config.conf
-  ├── docs
-  │   ├── CONVENTIONS.md
-  │   ├── FLAGS.md
-  │   ├── personal
-  │   └── TODO.md
-  ├── README.md
-  ├── sim
-  │   ├── CMakeLists.txt
-  │   └── code
-  ├── tests
-  │   ├── CMakeLists.txt
-  │   ├── googletest
-  │   └── unittests
-  └── third_party
-      ├── glm
-      ├── imgui
-      ├── sdl3
-      ├── vk-bootstrap
-      └── VulkanMemoryAllocator
-```
 
 ## Related Research Repositories
 
