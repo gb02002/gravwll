@@ -46,7 +46,7 @@ The code is **not ready for production use**.
 
 ## Dev doc and progress
 
-More documentation can be found under [docs](docs/) directory. There are rules, build flags, current TODO and deep dive in some topics(e.g. reflection on [Memory Manager design](/docs/MEMORY_MANAGER.md))
+More documentation can be found under [docs](docs/) directory. There are rules, build flags, current [TODO](/docs/TODO.md) and deep dive in some topics(e.g. reflection on [Memory Manager design](/docs/MEMORY_MANAGER.md))
 
 Some progress can be found in discussions, e.g.:
 
@@ -94,6 +94,8 @@ sudo pacman -Syu --needed base-devel cmake vulkan-devel tbb gtest benchmark
 ```bash
 brew install --cask vulkan-sdk && brew install cmake tbb googletest google-benchmark
 ```
+
+### Cloning and building
 
 ```bash
 git clone --recursive https://github.com/gb02002/gravwll.git

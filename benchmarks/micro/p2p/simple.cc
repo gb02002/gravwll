@@ -293,7 +293,7 @@ void BM_p2p_interaction_list_SIMD(benchmark::State &state) {
 
 // BENCHMARK(BM_p2p_interaction_list);
 // BENCHMARK(BM_p2p_interaction_list_SIMD);
-
+//
 BENCHMARK(BM_p2p_interaction_list)->Repetitions(3)->DisplayAggregatesOnly(true);
 BENCHMARK(BM_p2p_interaction_list_SIMD)
     ->Repetitions(3)
